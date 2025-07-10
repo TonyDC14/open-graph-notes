@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge System</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Local-First Knowledge Management System</h1>
+    </header>
+
+    <main id="app">
+        <section id="vault-controls">
+            <h2>Vault Configuration</h2>
+            <label for="vault-path-input">Vault Path:</label>
+            <input type="text" id="vault-path-input" placeholder="/path/to/your/notes_folder">
+            <button id="set-vault-path-button">Set Vault</button>
+            <p id="vault-status"></p>
+        </section>
+
+        <section id="notes-list-container">
+            <h2>Notes</h2>
+            <ul id="notes-list">
+                <!-- Note items will be populated here -->
+            </ul>
+            <p id="notes-list-status">Set vault path to see notes.</p>
+        </section>
+
+        <section id="note-view-container">
+            <div class="note-header">
+                <h2 id="current-note-title">Note View</h2>
+                <button id="save-note-button">Save Note</button>
+            </div>
+            <p id="save-status" class="status-message"></p>
+
+            {/* This div will be hidden, replaced by the textarea for editing */}
+            <div id="note-content-display" class="note-content-area" style="display: none;">
+                <p>Select a note to view its content.</p>
+            </div>
+
+            <div class="editor-preview-layout">
+                <div class="editor-pane">
+                    <h3>Markdown Editor</h3>
+                    <textarea id="note-content-edit" class="note-content-area"></textarea>
+                </div>
+                <div class="preview-pane">
+                    <h3>HTML Preview</h3>
+                    <div id="note-content-preview" class="note-content-area">
+                        <p>Preview will appear here.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Status: <span id="backend-status">Connecting to backend...</span></p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
