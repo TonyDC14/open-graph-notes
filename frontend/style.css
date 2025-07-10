@@ -1,0 +1,210 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background-color: #f0f2f5;
+    color: #333;
+    line-height: 1.6;
+}
+
+header {
+    background-color: #2c3e50;
+    color: #ecf0f1;
+    padding: 1rem 0;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+}
+
+main#app {
+    display: flex;
+    flex-direction: column; /* Stack sections vertically */
+    padding: 20px;
+    gap: 20px; /* Space between sections */
+}
+
+section {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+h2 {
+    color: #34495e;
+    margin-top: 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+#vault-controls label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+#vault-controls input[type="text"] {
+    width: calc(100% - 100px); /* Adjust width considering button */
+    padding: 8px;
+    margin-right: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+#vault-controls button {
+    padding: 8px 15px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#vault-controls button:hover {
+    background-color: #2980b9;
+}
+
+#vault-status, #notes-list-status {
+    margin-top: 10px;
+    font-style: italic;
+    color: #7f8c8d;
+}
+
+#notes-list {
+    list-style-type: none;
+    padding: 0;
+}
+
+#notes-list li {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+#notes-list li:hover {
+    background-color: #ecf0f1;
+}
+
+#notes-list li:last-child {
+    border-bottom: none;
+}
+
+footer {
+    text-align: center;
+    padding: 15px;
+    background-color: #34495e;
+    color: #bdc3c7;
+    font-size: 0.9em;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+}
+
+/* Basic responsiveness */
+@media (min-width: 768px) {
+    main#app {
+        flex-direction: row; /* Arrange sections side-by-side on larger screens */
+        align-items: flex-start; /* Align items to the top */
+    }
+    #vault-controls, #notes-list-container {
+        flex-basis: 30%; /* Example width, adjust as needed */
+    }
+    #note-view-container {
+        flex-basis: 70%; /* Example width */
+        flex-grow: 1;
+    }
+    .note-content-area {
+        width: 100%;
+        min-height: 300px; /* Give some decent height */
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+        white-space: pre-wrap; /* To respect newlines and spaces in Markdown */
+        word-wrap: break-word; /* To break long words */
+        font-family: 'Courier New', Courier, monospace; /* Monospaced font for raw MD (display and edit) */
+        margin-top: 10px;
+    }
+    #note-content-preview {
+        font-family: Arial, sans-serif; /* Standard font for preview */
+        white-space: normal; /* Normal whitespace handling for HTML */
+    }
+    #note-content-edit { /* Specifically for textarea if needed */
+        resize: vertical; /* Allow vertical resizing */
+        height: 400px; /* Default height for editor */
+    }
+}
+
+/* Layout for side-by-side editor and preview */
+.editor-preview-layout {
+    display: flex;
+    gap: 20px; /* Space between editor and preview panes */
+    margin-top: 15px;
+}
+
+.editor-pane, .preview-pane {
+    flex: 1; /* Each takes up half the space */
+    display: flex;
+    flex-direction: column;
+}
+
+.editor-pane h3, .preview-pane h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #555;
+    font-size: 1rem;
+}
+
+/* Ensure note-content-area within panes fills height */
+.editor-pane .note-content-area,
+.preview-pane .note-content-area {
+    flex-grow: 1;
+    height: 400px; /* Match default editor height or make it dynamic */
+    overflow-y: auto; /* Add scroll if content overflows */
+}
+
+.note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.note-header h2 {
+    margin: 0; /* Remove default margin from h2 */
+}
+
+#save-note-button {
+    padding: 8px 15px;
+    background-color: #2ecc71; /* Green for save */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#save-note-button:hover {
+    background-color: #27ae60;
+}
+
+.status-message {
+    margin-top: 5px;
+    margin-bottom: 10px;
+    font-style: italic;
+    min-height: 1.2em; /* Reserve space to prevent layout jumps */
+}
+
+#save-status.success {
+    color: green;
+}
+
+#save-status.error {
+    color: red;
+}
