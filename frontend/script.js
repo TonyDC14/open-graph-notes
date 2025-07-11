@@ -609,21 +609,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-});
-
-
-// Helper to find and modify existing listener (conceptual, actual modification below)
-// Locate: setVaultPathButton.addEventListener('click', async () => { ...
-// Inside its try block, after vaultStatus.style.color = 'green';
-// And after await fetchAndDisplayNotes();
-// Add: await buildSearchIndex();
-
-
     // --- Create New Note Logic ---
     const createNewNoteButton = document.getElementById('create-new-note-button');
     if (createNewNoteButton) {
         createNewNoteButton.addEventListener('click', async () => {
-            if (!vaultPathInput.value.trim()) { // Check if vault is set by checking the input's value
+            // Now vaultPathInput is accessible
+            if (!vaultPathInput.value.trim()) {
                 alert("Please set a vault path before creating a new note.");
                 return;
             }
@@ -706,3 +697,12 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         console.warn("#create-new-note-button not found. UI might be outdated.");
     }
+
+}); // End of DOMContentLoaded
+
+
+// Helper to find and modify existing listener (conceptual, actual modification below)
+// Locate: setVaultPathButton.addEventListener('click', async () => { ...
+// Inside its try block, after vaultStatus.style.color = 'green';
+// And after await fetchAndDisplayNotes();
+// Add: await buildSearchIndex();
