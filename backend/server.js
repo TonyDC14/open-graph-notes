@@ -29,6 +29,12 @@ let googleDriveTokens = null;
 // Scopes required for Google Drive API access
 const GOOGLE_DRIVE_SCOPES = ['https://www.googleapis.com/auth/drive.readonly']; // Start with read-only
 
+// --- Middleware Setup ---
+// Serve static files from the frontend directory
+app.use(express.static(path.join(__dirname, '../frontend')));
+// Middleware for JSON body parsing - IMPORTANT: Must be before routes that need it
+app.use(express.json());
+
 // --- Google Drive Auth Endpoints ---
 
 // Endpoint to initiate OAuth flow
@@ -294,12 +300,27 @@ app.get('/api/drive/auth/status', (req, res) => {
     }
 });
 
+// --- Global Error Handling Middleware ---
+// This should be the last middleware added before app.listen.
+// Catches errors from synchronous code in route handlers, or errors passed to next().
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+    console.error("Global error handler caught an error:", err.stack || err);
+
+    // If headers have already been sent, delegate to the default Express error handler
+    if (res.headersSent) {
+        return next(err);
+    }
+
+    res.status(err.status || 500).json({
+        error: err.message || 'An unexpected server error occurred.',
+        // Optionally, include more detail in development, but be cautious in production
+        details: process.env.NODE_ENV === 'development' && err.stack ? err.stack : undefined
+    });
+});
 
 // --- HTTP Server Setup ---
-// Serve static files from the frontend directory
-app.use(express.static(path.join(__dirname, '../frontend')));
-// Middleware for JSON body parsing
-app.use(express.json());
+// Note: express.static and express.json were moved to the top of the file.
 
 const server = app.listen(PORT, () => {
     console.log(`HTTP Server listening on port ${PORT}`);
