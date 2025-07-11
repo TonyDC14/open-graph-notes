@@ -1,331 +1,402 @@
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    background-color: #f0f2f5;
-    color: #333;
-    line-height: 1.6;
-}
-
-header {
-    background-color: #2c3e50;
-    color: #ecf0f1;
-    padding: 1rem 0;
-    text-align: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-header h1 {
-    margin: 0;
-    font-size: 1.8rem;
-}
-
-main#app {
-    display: flex;
-    flex-direction: column; /* Stack sections vertically */
-    padding: 20px;
-    gap: 20px; /* Space between sections */
-}
-
-section {
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-h2 {
-    color: #34495e;
-    margin-top: 0;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
-}
-
-#vault-controls label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-}
-
-#vault-controls input[type="text"] {
-    width: calc(100% - 100px); /* Adjust width considering button */
-    padding: 8px;
-    margin-right: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+/* Global Resets and Base Styles */
+* {
     box-sizing: border-box;
-}
-
-#vault-controls button {
-    padding: 8px 15px;
-    background-color: #3498db;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-#vault-controls button:hover {
-    background-color: #2980b9;
-}
-
-#vault-status, #notes-list-status {
-    margin-top: 10px;
-    font-style: italic;
-    color: #7f8c8d;
-}
-
-#notes-list {
-    list-style-type: none;
+    margin: 0;
     padding: 0;
 }
 
-#notes-list li {
-    padding: 8px;
-    border-bottom: 1px solid #eee;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    line-height: 1.6;
+    background-color: #f0f2f5; /* Light grey background for the page */
+    color: #333; /* Default text color */
+    display: flex; /* For footer positioning */
+    flex-direction: column; /* For footer positioning */
+    min-height: 100vh; /* Ensure body takes full viewport height */
 }
 
-#notes-list li:hover {
-    background-color: #ecf0f1;
+h1, h2, h3, h4, h5, h6 {
+    margin-bottom: 0.75em;
+    font-weight: 600;
 }
 
-#notes-list li:last-child {
+a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+ul {
+    list-style: none;
+}
+
+/* Main Application Layout */
+.app-container {
+    display: flex;
+    flex-grow: 1; /* Allows app-container to fill space for footer */
+    overflow: hidden; /* Prevent scrollbars on app-container itself */
+}
+
+.sidebar {
+    width: 320px; /* Fixed width for the sidebar */
+    background-color: #ffffff; /* White background for sidebar */
+    border-right: 1px solid #d1d5db; /* Light border */
+    padding: 0; /* Padding will be on sections */
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto; /* Allow sidebar to scroll if content overflows */
+    height: 100vh; /* Full viewport height for sidebar */
+    position: sticky; /* Sticky sidebar */
+    top: 0;
+}
+
+.sidebar-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.sidebar-header h1 {
+    font-size: 1.5rem;
+    color: #111827; /* Darker heading color */
+    margin: 0;
+}
+
+.sidebar-section {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #e5e7eb; /* Separator for sections */
+}
+.sidebar-section:last-child {
     border-bottom: none;
 }
 
+.sidebar-section h2 {
+    font-size: 0.875rem; /* Smaller section titles */
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280; /* Grey for section titles */
+    margin-bottom: 1rem;
+}
+.sidebar-section h3 { /* For sub-headings like "Drive Files" */
+    font-size: 0.9rem;
+    color: #4b5563;
+    margin-bottom: 0.75rem;
+}
+.sidebar-section h4 { /* For "Search Results:" */
+    font-size: 0.85rem;
+    color: #4b5563;
+    margin-bottom: 0.5rem;
+}
+
+
+.main-content {
+    flex-grow: 1; /* Takes remaining space */
+    padding: 1.5rem 2rem; /* Padding around the main content area */
+    overflow-y: auto; /* Allow main content to scroll */
+    height: 100vh; /* Full viewport height */
+}
+
+#note-view-container {
+    background-color: transparent; /* Remove previous section styling */
+    padding: 0;
+    box-shadow: none;
+    border-radius: 0;
+}
+
+
+/* Footer Styling (Kept from before, slightly adjusted) */
 footer {
     text-align: center;
-    padding: 15px;
+    padding: 0.8rem 1rem;
     background-color: #34495e;
     color: #bdc3c7;
-    font-size: 0.9em;
-    position: fixed;
-    bottom: 0;
+    font-size: 0.85em;
+    border-top: 1px solid #4a637c;
+    flex-shrink: 0; /* Prevent footer from shrinking */
+}
+
+
+/* Basic Element Styling (will be refined in next steps) */
+input[type="text"],
+input[type="search"],
+textarea {
     width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem; /* Rounded corners */
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+    box-sizing: border-box;
+}
+input[type="text"]:focus,
+input[type="search"]:focus,
+textarea:focus {
+    outline: none;
+    border-color: #007bff; /* Highlight focus */
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
-/* Basic responsiveness */
-@media (min-width: 768px) {
-    main#app {
-        flex-direction: row; /* Arrange sections side-by-side on larger screens */
-        align-items: flex-start; /* Align items to the top */
-    }
-    #vault-controls, #notes-list-container, #gdrive-section, #search-section {
-        flex-basis: 30%; /* Example width, adjust as needed */
-        /* Allow sections to grow if others are smaller, but not shrink beyond content */
-        flex-grow: 0;
-        flex-shrink: 0;
-    }
-     #note-view-container {
-        flex-basis: 70%; /* Example width */
-        flex-grow: 1; /* Allow note view to take up remaining space */
-    }
-    #gdrive-connect-button {
-        padding: 8px 12px;
-        background-color: #4285F4; /* Google Blue */
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        margin-top: 10px;
-        transition: background-color 0.3s ease;
-    }
-    #gdrive-connect-button:hover {
-        background-color: #3578E5;
-    }
-    #gdrive-files-list {
-        list-style-type: none;
-        padding: 0;
-        max-height: 200px; /* Limit height and make scrollable */
-        overflow-y: auto;
-        border: 1px solid #eee;
-        border-radius: 4px;
-    }
-    #gdrive-files-list li {
-        padding: 6px 8px;
-        border-bottom: 1px solid #f0f0f0;
-        font-size: 0.9em;
-    }
-    #gdrive-files-list li:last-child {
-        border-bottom: none;
-    }
 
-    /* Search Section Styling */
-    #search-input {
-        width: 100%;
-        padding: 8px;
-        margin-bottom: 10px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        box-sizing: border-box;
-    }
-
-    #search-results-container h4 {
-        margin-top: 0;
-        margin-bottom: 5px;
-        font-size: 0.95em;
-        color: #333;
-    }
-
-    #search-results-list {
-        list-style-type: none;
-        padding: 0;
-        max-height: 180px; /* Adjust as needed */
-        overflow-y: auto;
-        border: 1px solid #eee;
-        border-radius: 4px;
-        margin-bottom: 5px;
-    }
-
-    #search-results-list li {
-        padding: 7px 10px;
-        border-bottom: 1px solid #f0f0f0;
-        cursor: pointer;
-        font-size: 0.9em;
-        transition: background-color 0.2s ease;
-    }
-    #search-results-list li:hover {
-        background-color: #e9ecef;
-    }
-    #search-results-list li:last-child {
-        border-bottom: none;
-    }
-    #search-results-status {
-        font-size: 0.85em;
-        font-style: italic;
-        color: #777;
-    }
-
-    .note-content-area {
-        width: 100%;
-        min-height: 300px; /* Give some decent height */
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-sizing: border-box;
-        white-space: pre-wrap; /* To respect newlines and spaces in Markdown */
-        word-wrap: break-word; /* To break long words */
-        font-family: 'Courier New', Courier, monospace; /* Monospaced font for raw MD (display and edit) */
-        margin-top: 10px;
-    }
-    #note-content-preview {
-        font-family: Arial, sans-serif; /* Standard font for preview */
-        white-space: normal; /* Normal whitespace handling for HTML */
-    }
-    #note-content-edit { /* Specifically for textarea if needed */
-        resize: vertical; /* Allow vertical resizing */
-        height: 400px; /* Default height for editor */
-    }
+button {
+    padding: 0.5rem 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.375rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
 
-#note-metadata-display {
-    background-color: #f8f9fa; /* Light grey background */
-    border: 1px solid #dee2e6; /* Softer border */
+/* Default button style (can be overridden by specific button IDs) */
+button {
+    background-color: #007bff; /* Primary blue */
+    color: white;
+}
+button:hover {
+    background-color: #0056b3;
+}
+
+/* Status text styling */
+.status-text, .status-message { /* .status-message was used for save-status */
+    font-size: 0.85em;
+    color: #6b7280; /* Grey text */
+    margin-top: 0.5rem;
+    min-height: 1.2em;
+}
+#save-status.success { /* Keep specific status colors */
+    color: #16a34a; /* Green */
+}
+#save-status.error {
+    color: #dc2626; /* Red */
+}
+
+
+/* Note content areas (editor, preview, graph) - basic reset */
+.note-content-area {
+    width: 100%;
+    min-height: 300px;
+    padding: 10px;
+    border: 1px solid #d1d5db;
     border-radius: 4px;
-    padding: 12px 18px; /* Slightly more padding */
-    margin-bottom: 15px; /* Space below it */
-    font-size: 0.88em; /* Slightly smaller font for metadata */
-    color: #495057; /* Darker grey text */
+    box-sizing: border-box;
+    margin-top: 10px;
+    font-size: 0.9rem;
 }
-
-#note-metadata-display h4 { /* Optional: if you add a title like "Metadata:" */
-    margin-top: 0;
-    margin-bottom: 10px;
-    font-size: 1.0em; /* Relative to parent's 0.88em */
-    color: #343a40;
-    border-bottom: 1px solid #e9ecef;
-    padding-bottom: 5px;
-}
-
-#note-metadata-display pre { /* If displaying as raw JSON string */
+#note-content-edit {
+    font-family: 'Courier New', Courier, monospace;
     white-space: pre-wrap;
     word-wrap: break-word;
-    background-color: #e9ecef; /* Light background for pre block */
-    border: 1px solid #ced4da;
-    padding: 10px;
+    resize: vertical;
+    height: 400px;
+}
+#note-content-preview {
+    font-family: inherit; /* Use body font */
+    white-space: normal;
+}
+#graph-container {
+    border: 1px solid #d1d5db;
+    background-color: #f9fafb; /* Slightly off-white for graph bg */
+    height: 500px;
+}
+#graph-view-section {
+    margin-top: 20px;
+}
+#note-metadata-display {
+    background-color: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.85em;
+    color: #4b5563;
+}
+#note-metadata-display h4 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-size: 1em;
+    color: #374151;
+    border-bottom: 1px solid #d1d5db;
+    padding-bottom: 0.3rem;
+}
+#note-metadata-display pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    background-color: #e5e7eb;
+    border: 1px solid #d1d5db;
+    padding: 0.5rem;
     border-radius: 3px;
-    font-size: 0.95em; /* Relative to parent's 0.88em */
-    color: #212529;
-    max-height: 150px; /* Limit height for long metadata */
+    font-size: 0.9em;
+    color: #1f2937;
+    max-height: 150px;
     overflow-y: auto;
 }
 
-/* Layout for side-by-side editor and preview */
+/* Editor/Preview Layout */
 .editor-preview-layout {
     display: flex;
-    gap: 20px; /* Space between editor and preview panes */
-    margin-top: 15px;
+    gap: 1.5rem;
+    margin-top: 1rem;
 }
-
 .editor-pane, .preview-pane {
-    flex: 1; /* Each takes up half the space */
+    flex: 1;
     display: flex;
     flex-direction: column;
 }
-
 .editor-pane h3, .preview-pane h3 {
-    margin-top: 0;
-    margin-bottom: 10px;
-    color: #555;
     font-size: 1rem;
+    color: #374151;
+    margin-bottom: 0.75rem;
 }
-
-/* Ensure note-content-area within panes fills height */
 .editor-pane .note-content-area,
 .preview-pane .note-content-area {
     flex-grow: 1;
-    height: 400px; /* Match default editor height or make it dynamic */
-    overflow-y: auto; /* Add scroll if content overflows */
+    /* height: 400px; */ /* Let min-height from .note-content-area and flex-grow handle it */
+    overflow-y: auto;
+    background-color: #ffffff; /* Ensure content areas have a white background */
 }
 
-#graph-view-section {
-    margin-top: 20px; /* Add some space above the graph section */
-}
-
-#graph-container {
-    /* Styles for graph-container are mostly inline in index.html for now,
-       but could be moved here if more are needed.
-       e.g., background-color: #f9f9f9; was inline. */
-}
-
+/* Note Header Refinements */
 .note-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 1rem; /* Increased margin */
+    padding-bottom: 1rem; /* Increased padding */
+    border-bottom: 1px solid #dee2e6; /* Slightly softer border */
 }
-
-.note-header h2 {
-    margin: 0; /* Remove default margin from h2 */
+.note-header h2 { /* current-note-title */
+    margin: 0;
+    font-size: 1.6rem; /* Slightly reduced */
+    color: #1f2937; /* Slightly softer dark color */
+    font-weight: 600;
 }
+/* #save-note-button styling is handled by specific button styles later or global */
 
+/* #note-metadata-display is already styled well from previous step */
+
+/* Editor/Preview Panes Titles - already styled by .editor-pane h3, .preview-pane h3 */
+
+/* Graph View Section Refinements */
+#graph-view-section {
+    margin-top: 1.5rem; /* Consistent with editor-preview-layout top margin */
+    padding-top: 1rem; /* Add some padding if it feels too close to elements above */
+    border-top: 1px solid #e5e7eb; /* Optional: separator line from content above */
+}
+#graph-view-section h3 { /* Style like editor/preview titles */
+    font-size: 1rem;
+    color: #374151;
+    margin-bottom: 0.75rem;
+}
+/* #graph-container uses .note-content-area styles if class is added, or its own */
+/* For now, its inline styles and existing #graph-container styles are basic */
+
+
+/* Specific button styles (will be refined in button standardization step) */
+#set-vault-path-button {} /* Uses default blue */
 #save-note-button {
-    padding: 8px 15px;
-    background-color: #2ecc71; /* Green for save */
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
+    background-color: #16a34a; /* Green */
 }
-
 #save-note-button:hover {
-    background-color: #27ae60;
+    background-color: #15803d;
+}
+#gdrive-connect-button {
+    background-color: #4285F4; /* Google Blue */
+    margin-top: 0.5rem; /* Adjusted from 10px */
+}
+#gdrive-connect-button:hover {
+    background-color: #3578E5;
 }
 
-.status-message {
-    margin-top: 5px;
-    margin-bottom: 10px;
-    font-style: italic;
-    min-height: 1.2em; /* Reserve space to prevent layout jumps */
+/* Lists styling (will be refined) */
+#notes-list, #gdrive-files-list, #search-results-list {
+    list-style-type: none;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    margin-top: 0.5rem;
+}
+#notes-list li, #gdrive-files-list li, #search-results-list li {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out;
+}
+#notes-list li:hover, #gdrive-files-list li:hover, #search-results-list li:hover {
+    background-color: #f3f4f6; /* Light hover */
+}
+#notes-list li:last-child, #gdrive-files-list li:last-child, #search-results-list li:last-child {
+    border-bottom: none;
 }
 
-#save-status.success {
-    color: green;
+/* Sidebar Section Specifics */
+#vault-controls label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: #374151;
+}
+#vault-controls input[type="text"] {
+    margin-bottom: 0.75rem; /* Consistent spacing */
+}
+/* #set-vault-path-button uses default button style */
+
+#search-input { /* Already styled, but ensure consistency */
+    margin-bottom: 0.75rem;
+}
+#search-results-container h4 {
+    margin-top: 0.5rem; /* Reduced from 1rem as it's within a section */
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem; /* Slightly smaller */
+    font-weight: 500;
+    color: #4b5563;
 }
 
-#save-status.error {
-    color: red;
+#gdrive-auth-status p {
+    font-size: 0.9em;
+    margin-bottom: 0.5rem; /* Space before button if shown */
+}
+#gdrive-files-container h3 { /* "Drive Files" heading */
+    margin-top: 1rem; /* Space above if auth status is also shown */
+}
+
+
+/* Ensure lists within sidebar sections take full width if needed */
+#notes-list, #gdrive-files-list, #search-results-list {
+    width: 100%;
+    margin-top: 0.25rem; /* Reduced top margin for lists under headings */
+}
+
+
+/* Hide old main#app and header#title - structure replaced */
+/* main#app, header { display: none !important; } */
+/* Commented out as HTML structure is changed instead */
+
+/* Responsiveness (very basic for now) */
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+        height: auto; /* Allow content to determine height */
+        overflow: visible;
+    }
+    .sidebar {
+        width: 100%;
+        height: auto; /* Auto height for sidebar on small screens */
+        position: static; /* Not sticky on mobile */
+        border-right: none;
+        border-bottom: 1px solid #d1d5db; /* Border at bottom */
+        max-height: 50vh; /* Limit sidebar height on mobile, make it scrollable */
+    }
+    .main-content {
+        height: auto; /* Auto height for main content */
+        padding: 1rem; /* Reduced padding on mobile */
+    }
+    .editor-preview-layout {
+        flex-direction: column; /* Stack editor and preview on mobile */
+    }
 }
