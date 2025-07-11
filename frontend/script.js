@@ -6,36 +6,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const notesListStatus = document.getElementById('notes-list-status');
     const backendStatus = document.getElementById('backend-status');
     const currentNoteTitle = document.getElementById('current-note-title');
-    const noteContentDisplay = document.getElementById('note-content-display'); // Now hidden
-    const noteContentPreview = document.getElementById('note-content-preview'); // For HTML preview
-    const noteContentEdit = document.getElementById('note-content-edit'); // The editor
+    const noteContentDisplay = document.getElementById('note-content-display');
+    const noteContentPreview = document.getElementById('note-content-preview');
+    const noteContentEdit = document.getElementById('note-content-edit');
     const saveNoteButton = document.getElementById('save-note-button');
     const saveStatus = document.getElementById('save-status');
     const graphViewSection = document.getElementById('graph-view-section');
     const graphContainer = document.getElementById('graph-container');
-    let visNetwork = null; // To hold the Vis.js Network instance
+    let visNetwork = null;
 
-    let currentOpenNoteName = null; // To keep track of the currently open note for saving
-    let currentOpenNoteType = 'markdown'; // 'markdown' or 'graph'
+    let currentOpenNoteName = null;
+    let currentOpenNoteType = 'markdown';
 
-    // Google Drive UI Elements
+
     const gdriveAuthStatus = document.getElementById('gdrive-auth-status');
     const gdriveConnectButton = document.getElementById('gdrive-connect-button');
     const gdriveFilesContainer = document.getElementById('gdrive-files-container');
     const gdriveFilesList = document.getElementById('gdrive-files-list');
     const gdriveFilesStatus = document.getElementById('gdrive-files-status');
 
-    // Search UI Elements
+
     const searchInput = document.getElementById('search-input');
     const searchResultsContainer = document.getElementById('search-results-container');
     const searchResultsList = document.getElementById('search-results-list');
     const searchResultsStatus = document.getElementById('search-results-status');
     const noteMetadataDisplay = document.getElementById('note-metadata-display');
 
-    let lunrIndex = null; // To hold the Lunr.js index instance
+    let lunrIndex = null;
 
 
-    // Test backend connection
+
     fetch('/api/hello')
         .then(response => {
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
             backendStatus.style.color = 'red';
         });
 
-    // --- WebSocket Setup ---
+
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${wsProtocol}//${window.location.host}`;
     let socket;
@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('WebSocket connection closed. Attempting to reconnect...');
             backendStatus.textContent += ' | WS Disconnected';
             backendStatus.style.color = 'orange';
-            // Simple reconnect logic
+
             setTimeout(connectWebSocket, 5000);
         };
 
@@ -85,16 +85,16 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('WebSocket error:', error);
             backendStatus.textContent += ' | WS Error';
             backendStatus.style.color = 'red';
-            // No need to call connectWebSocket here, onclose will handle it
+
         };
     }
 
-    connectWebSocket(); // Initial connection attempt
+    connectWebSocket();
 
     function handleFileEvent(message) {
         const { event, filename } = message;
         console.log(`File event: ${event} for ${filename}`);
-        // Show a small notification to the user
+
         const notification = document.createElement('div');
         notification.textContent = `File system: '${filename}' was ${event === 'add' ? 'added' : event === 'unlink' ? 'removed' : 'changed'}.`;
         notification.style.position = 'fixed';
@@ -112,21 +112,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         if (event === 'add' || event === 'unlink') {
-            fetchAndDisplayNotes(); // Refresh the notes list
+            fetchAndDisplayNotes();
         } else if (event === 'change') {
             if (filename === currentOpenNoteName) {
-                // The currently open note was changed externally
-                // Simple approach: just reload it.
-                // Advanced: check if editor is dirty and ask user.
+
+
+
                 console.log(`Currently open note '${filename}' changed externally. Reloading.`);
                 loadNoteContent(filename);
             }
         }
     }
 
-    // Function to fetch and display notes
+
     async function fetchAndDisplayNotes() {
-        notesList.innerHTML = ''; // Clear current list
+        notesList.innerHTML = '';
         notesListStatus.textContent = 'Loading notes...';
         try {
             const response = await fetch('/api/notes');
@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     listItem.addEventListener('click', () => loadNoteContent(noteName));
                     notesList.appendChild(listItem);
                 });
-                notesListStatus.textContent = ''; // Clear status if notes are found
+                notesListStatus.textContent = '';
             }
         } catch (error) {
             console.error('Error fetching notes:', error);
@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Event listener for setting vault path
+
     setVaultPathButton.addEventListener('click', async () => {
         const path = vaultPathInput.value.trim();
         if (!path) {
@@ -182,38 +182,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
             vaultStatus.textContent = result.message;
             vaultStatus.style.color = 'green';
-            // After setting vault, fetch and display notes
+
             await fetchAndDisplayNotes();
-            // After notes are listed, build the search index
+
             await buildSearchIndex();
 
         } catch (error) {
             console.error('Error setting vault path:', error);
             vaultStatus.textContent = `Error: ${error.message}`;
             vaultStatus.style.color = 'red';
-            notesList.innerHTML = ''; // Clear notes list on error
+            notesList.innerHTML = '';
             notesListStatus.textContent = 'Vault path not set or invalid.';
         }
     });
 
-    // Initial state for notes list
+
     notesListStatus.textContent = 'Set vault path to see notes.';
 
-    // Function to load and display a single note's content
+
     async function loadNoteContent(noteName) {
-        currentOpenNoteName = null; // Reset while loading
-        currentOpenNoteType = 'markdown'; // Default to markdown
-        saveStatus.textContent = ''; // Clear save status
+        currentOpenNoteName = null;
+        currentOpenNoteType = 'markdown';
+        saveStatus.textContent = '';
         saveStatus.className = 'status-message';
         currentNoteTitle.textContent = `Loading ${noteName}...`;
         noteContentEdit.value = 'Fetching content...';
         noteContentPreview.innerHTML = '<p>Fetching preview...</p>';
-        noteContentDisplay.textContent = ''; // Clear the hidden static display
-        graphViewSection.style.display = 'none'; // Hide graph section by default
-        noteMetadataDisplay.style.display = 'none'; // Hide metadata display by default
-        noteMetadataDisplay.innerHTML = ''; // Clear previous metadata
+        noteContentDisplay.textContent = '';
+        graphViewSection.style.display = 'none';
+        noteMetadataDisplay.style.display = 'none';
+        noteMetadataDisplay.innerHTML = '';
         if (visNetwork) {
-            visNetwork.destroy(); // Destroy previous graph instance if any
+            visNetwork.destroy();
             visNetwork = null;
         }
 
@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentOpenNoteName = noteData.name;
             currentOpenNoteType = noteData.type || 'markdown';
 
-            // Display frontmatter if it exists
+
             if (noteData.frontmatter && Object.keys(noteData.frontmatter).length > 0) {
                 const fmTitle = document.createElement('h4');
                 fmTitle.textContent = 'Metadata (Frontmatter):';
@@ -243,12 +243,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 noteMetadataDisplay.style.display = 'none';
             }
 
-            // Populate editor with the full raw content
+
             noteContentEdit.value = noteData.rawContent || '';
 
 
             if (currentOpenNoteType === 'graph') {
-                // For graph files, markdownContent from API is already after frontmatter
+
                 if (typeof marked === 'function') {
                     noteContentPreview.innerHTML = marked.parse(noteData.markdownContent || '');
                 } else {
@@ -274,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             hideEdgesOnDrag: true
                         },
                         nodes: {
-                            shape: 'ellipse', // Default shape
+                            shape: 'ellipse',
                             font: {
                                 size: 14,
                                 face: 'arial'
@@ -299,10 +299,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     graphContainer.innerHTML = '<p style="color:red;">Could not load graph data or Vis.js library.</p>';
                 }
 
-            } else { // 'markdown' type, content from API is already after frontmatter
-                // noteContentEdit value is already set with rawContent
+            } else {
+
                 if (typeof marked === 'function') {
-                    noteContentPreview.innerHTML = marked.parse(noteData.content || ''); // noteData.content is content after FM
+                    noteContentPreview.innerHTML = marked.parse(noteData.content || '');
                 } else {
                     noteContentPreview.innerHTML = '<p style="color:red;">Error: Markdown parser (marked.js) not loaded.</p>';
                 }
@@ -319,30 +319,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Event listener for real-time Markdown editing
+
     noteContentEdit.addEventListener('input', () => {
-        saveStatus.textContent = ''; // Clear save status on edit
+        saveStatus.textContent = '';
         saveStatus.className = 'status-message';
 
         const currentMarkdown = noteContentEdit.value;
 
         if (currentOpenNoteType === 'graph') {
-            // For graph files, try to extract markdown part for preview
-            // This is a simplified approach; a more robust parser would be needed for live graph editing
+
+
             const graphRegex = /```json_graph\s*([\s\S]*?)\s*```/;
             const markdownPart = currentMarkdown.replace(graphRegex, '').trim();
             if (typeof marked === 'function') {
                 noteContentPreview.innerHTML = marked.parse(markdownPart);
             }
-            // Live updating of the vis.js graph from editor changes is complex and deferred to an "edit graph" feature.
-        } else { // 'markdown'
+
+        } else {
             if (typeof marked === 'function') {
                 noteContentPreview.innerHTML = marked.parse(currentMarkdown);
             }
         }
     });
 
-    // Event listener for saving the note
+
     saveNoteButton.addEventListener('click', async () => {
         if (!currentOpenNoteName) {
             saveStatus.textContent = 'No note is currently open to save.';
@@ -377,16 +377,16 @@ document.addEventListener('DOMContentLoaded', () => {
             saveStatus.className = 'status-message error';
         }
 
-        // Optionally, clear status after a few seconds
+
         setTimeout(() => {
-            if (saveStatus.textContent !== 'Saving...') { // Don't clear if another save started
+            if (saveStatus.textContent !== 'Saving...') {
                  saveStatus.textContent = '';
                  saveStatus.className = 'status-message';
             }
         }, 5000);
     });
 
-    // --- Google Drive UI Logic ---
+
     async function checkGDriveAuthStatus() {
         try {
             gdriveAuthStatus.innerHTML = '<p>Status: Checking...</p>';
@@ -406,7 +406,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error checking Google Drive auth status:', error);
             gdriveAuthStatus.innerHTML = '<p style="color: red;">Status: Error checking connection.</p>';
-            gdriveConnectButton.style.display = 'block'; // Show button to allow retry
+            gdriveConnectButton.style.display = 'block';
         }
     }
 
@@ -418,27 +418,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok && data.authUrl) {
                 gdriveAuthStatus.innerHTML = '<p>Status: Redirecting to Google for authentication... Please follow the instructions in the new tab/window.</p>';
-                // Open the auth URL in a new tab. User will be redirected to /api/drive/auth/google/callback
-                // which should then ideally close itself or notify this page.
-                // For now, we'll rely on polling or manual refresh after user completes auth.
+
+
+
                 const authWindow = window.open(data.authUrl, '_blank', 'width=600,height=700');
 
-                // Basic polling to check status after a short while, assuming user completes auth
-                // A more robust solution would use window.postMessage from the callback page or server-sent events.
+
+
                 let pollCount = 0;
-                const maxPolls = 12; // Poll for 2 minutes (12 * 10s)
+                const maxPolls = 12;
                 const pollInterval = setInterval(async () => {
                     pollCount++;
                     const statusResponse = await fetch('/api/drive/auth/status');
                     const statusData = await statusResponse.json();
                     if (statusData.isAuthenticated || (authWindow && authWindow.closed) || pollCount >= maxPolls) {
                         clearInterval(pollInterval);
-                        checkGDriveAuthStatus(); // Refresh UI based on final status
+                        checkGDriveAuthStatus();
                         if (authWindow && !authWindow.closed) {
-                           // authWindow.close(); // Close if still open and we got a status or timed out
+
                         }
                     }
-                }, 10000); // Poll every 10 seconds
+                }, 10000);
 
             } else {
                 throw new Error(data.error || 'Failed to get authentication URL.');
@@ -456,7 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('/api/drive/list-files');
             if (!response.ok) {
                 const errorData = await response.json();
-                 // If 401, it might mean tokens are bad, so re-check auth status
+
                 if (response.status === 401) {
                     checkGDriveAuthStatus();
                 }
@@ -469,11 +469,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 files.forEach(file => {
                     const listItem = document.createElement('li');
                     listItem.textContent = `${file.name} (${file.mimeType})`;
-                    // Add click listener later for handling drive files [[drive://file.id]]
-                    // listItem.addEventListener('click', () => handleDriveFileClick(file.id, file.name));
+
+
                     gdriveFilesList.appendChild(listItem);
                 });
-                gdriveFilesStatus.textContent = ''; // Clear status
+                gdriveFilesStatus.textContent = '';
             }
         } catch (error) {
             console.error('Error fetching Google Drive files:', error);
@@ -482,15 +482,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Initial check for Google Drive Auth Status
+
     checkGDriveAuthStatus();
 
-    // --- Search Indexing Logic ---
+
     async function buildSearchIndex() {
-        if (!vaultPathInput.value) { // Or some other check if vault is truly set
+        if (!vaultPathInput.value) {
             console.log("Vault path not set, skipping search index build.");
-            lunrIndex = null; // Ensure index is cleared if vault is not set
-            // Optionally clear search UI if vault becomes unset
+            lunrIndex = null;
+
             searchInput.value = '';
             searchResultsContainer.style.display = 'none';
             searchResultsList.innerHTML = '';
@@ -500,7 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         console.log("Building search index...");
         searchResultsStatus.textContent = "Building search index...";
-        searchResultsContainer.style.display = 'block'; // Show container while building
+        searchResultsContainer.style.display = 'block';
 
         try {
             const response = await fetch('/api/search/all-notes-content');
@@ -517,8 +517,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             lunrIndex = lunr(function () {
-                this.ref('name'); // Document reference (filename)
-                this.field('name', { boost: 10 }); // Boost filename matches
+                this.ref('name');
+                this.field('name', { boost: 10 });
                 this.field('content');
 
                 notesData.forEach(function (doc) {
@@ -527,10 +527,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             console.log("Search index built successfully.");
             searchResultsStatus.textContent = `Indexed ${notesData.length} notes. Ready to search.`;
-            // Keep search results container visible if index is built, but clear list
+
             searchResultsList.innerHTML = '';
-            if (searchInput.value === '') { // Only hide if search input is empty
-                 // searchResultsStatus.textContent = 'Ready to search.'; // More accurate
+            if (searchInput.value === '') {
+
             }
 
 
@@ -542,13 +542,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Modify the setVaultPathButton event listener to call buildSearchIndex
-    // (This is an existing listener, we need to find it and add the call)
-    // The original call to fetchAndDisplayNotes() is fine to keep.
-    // We will find the successful vault set part and add buildSearchIndex() there.
 
 
-    // --- Search Execution & Display Logic ---
+
+
+
+
+
     searchInput.addEventListener('input', () => {
         const query = searchInput.value.trim();
 
@@ -561,9 +561,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (query === '') {
             searchResultsList.innerHTML = '';
-            searchResultsStatus.textContent = 'Type to search.'; // Or clear it
-            // Keep container visible if index is ready, or hide:
-            // searchResultsContainer.style.display = 'none';
+            searchResultsStatus.textContent = 'Type to search.';
+
+
             if (lunrIndex) searchResultsStatus.textContent = `Indexed ${Object.keys(lunrIndex.documentStore.docs).length} notes. Ready to search.`;
             else searchResultsStatus.textContent = '';
             return;
@@ -571,7 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const results = lunrIndex.search(query);
-            searchResultsList.innerHTML = ''; // Clear previous results
+            searchResultsList.innerHTML = '';
 
             if (results.length === 0) {
                 searchResultsStatus.textContent = 'No results found.';
@@ -579,23 +579,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 searchResultsStatus.textContent = `${results.length} result(s) found:`;
                 results.forEach(result => {
                     const listItem = document.createElement('li');
-                    listItem.textContent = result.ref; // result.ref is the filename
-                    // Highlight matched terms (simple example, could be more advanced)
-                    // result.matchData.metadata contains info about term matches
-                    // For example:
-                    // Object.keys(result.matchData.metadata).forEach(term => {
-                    //    if (result.matchData.metadata[term].content) { // if term matched in content
-                    //        // could add more info or styling
-                    //    }
-                    // });
+                    listItem.textContent = result.ref;
+
+
+
+
+
+
+
 
                     listItem.addEventListener('click', () => {
                         loadNoteContent(result.ref);
-                        // Optionally clear search after clicking a result
-                        // searchInput.value = '';
-                        // searchResultsList.innerHTML = '';
-                        // searchResultsStatus.textContent = '';
-                        // searchResultsContainer.style.display = 'none';
+
+
+
+
+
                     });
                     searchResultsList.appendChild(listItem);
                 });
@@ -609,33 +608,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-});
 
-
-// Helper to find and modify existing listener (conceptual, actual modification below)
-// Locate: setVaultPathButton.addEventListener('click', async () => { ...
-// Inside its try block, after vaultStatus.style.color = 'green';
-// And after await fetchAndDisplayNotes();
-// Add: await buildSearchIndex();
-
-
-    // --- Create New Note Logic ---
     const createNewNoteButton = document.getElementById('create-new-note-button');
     if (createNewNoteButton) {
         createNewNoteButton.addEventListener('click', async () => {
-            if (!vaultPathInput.value.trim()) { // Check if vault is set by checking the input's value
+
+            if (!vaultPathInput.value.trim()) {
                 alert("Please set a vault path before creating a new note.");
                 return;
             }
 
             let newFilename = window.prompt("Enter filename for the new note (e.g., my_new_note.md):");
 
-            if (newFilename === null) { // User pressed Cancel
+            if (newFilename === null) {
                 return;
             }
             newFilename = newFilename.trim();
 
-            if (!newFilename) { // User entered empty string and pressed OK
+            if (!newFilename) {
                 alert("Filename cannot be empty.");
                 return;
             }
@@ -644,13 +634,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 newFilename += '.md';
             }
 
-            // Basic check for just ".md" or very short names like "a.md"
+
             if (newFilename.length < 4) {
                 alert("Invalid filename. Please provide a more descriptive name for your note.");
                 return;
             }
 
-            // Regex for basic invalid filename characters (simplistic, OS dependent for full coverage)
+
             const invalidCharsRegex = /[<>:"/\\|?*\x00-\x1f]/;
             if (invalidCharsRegex.test(newFilename)) {
                 alert("Filename contains invalid characters (e.g., <, >, :, \", /, \\, |, ?, *). Please use a valid filename.");
@@ -658,16 +648,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
-                // Default content for the new note
+
                 const titleFromFilename = newFilename.replace(/\.md$/, '');
-                // const initialContent = `# ${titleFromFilename}\n\n`; // Backend now handles default content
+
 
                 const response = await fetch('/api/notes/create', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    // Backend will create default content, just send filename
+
                     body: JSON.stringify({ filename: newFilename }),
                 });
 
@@ -677,10 +667,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(result.error || `HTTP Error: ${response.status}`);
                 }
 
-                // Using a less intrusive way to show success, perhaps update a status bar
-                // For now, alert is fine for quick feedback.
-                // alert(result.message);
-                const saveStatusLikeElement = document.getElementById('notes-list-status'); // Reuse notes list status for this
+
+
+
+                const saveStatusLikeElement = document.getElementById('notes-list-status');
                 if (saveStatusLikeElement) {
                     saveStatusLikeElement.textContent = result.message;
                     saveStatusLikeElement.style.color = 'green';
@@ -690,11 +680,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
 
-                // Refresh notes list (chokidar will also do this, but good for immediate UI update)
+
                 await fetchAndDisplayNotes();
-                // Open the new note
+
                 loadNoteContent(result.filename);
-                // Rebuild search index to include the new note
+
                 await buildSearchIndex();
 
 
@@ -706,3 +696,5 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         console.warn("#create-new-note-button not found. UI might be outdated.");
     }
+
+});
