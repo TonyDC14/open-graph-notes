@@ -13,58 +13,60 @@
     <script src="https://unpkg.com/lunr/lunr.min.js"></script>
 </head>
 <body>
-    <header>
-        <h1>Local-First Knowledge Management System</h1>
-    </header>
+    <div class="app-container">
+        <aside class="sidebar">
+            <header class="sidebar-header">
+                <h1>Knowledge System</h1>
+            </header>
+            <section id="vault-controls" class="sidebar-section">
+                <h2>Vault Configuration</h2>
+                <label for="vault-path-input">Vault Path:</label>
+                <input type="text" id="vault-path-input" placeholder="/path/to/your/notes_folder">
+                <button id="set-vault-path-button">Set Vault</button>
+                <p id="vault-status" class="status-text"></p>
+            </section>
 
-    <main id="app">
-        <section id="vault-controls">
-            <h2>Vault Configuration</h2>
-            <label for="vault-path-input">Vault Path:</label>
-            <input type="text" id="vault-path-input" placeholder="/path/to/your/notes_folder">
-            <button id="set-vault-path-button">Set Vault</button>
-            <p id="vault-status"></p>
-        </section>
+            <section id="search-section" class="sidebar-section">
+                <h2>Search Notes</h2>
+                <input type="search" id="search-input" placeholder="Search all notes...">
+                <div id="search-results-container" style="display: none;">
+                    <h4>Search Results:</h4>
+                    <ul id="search-results-list"></ul>
+                    <p id="search-results-status" class="status-text"></p>
+                </div>
+            </section>
 
-        <section id="search-section">
-            <h2>Search Notes</h2>
-            <input type="search" id="search-input" placeholder="Search all notes...">
-            <div id="search-results-container" style="display: none;">
-                <h4>Search Results:</h4>
-                <ul id="search-results-list"></ul>
-                <p id="search-results-status"></p>
-            </div>
-        </section>
+            <section id="gdrive-section" class="sidebar-section">
+                <h2>Google Drive</h2>
+                <div id="gdrive-auth-status">
+                    <p>Status: Checking...</p>
+                </div>
+                <button id="gdrive-connect-button" style="display: none;">Connect to Google Drive</button>
+                <div id="gdrive-files-container" style="display: none;">
+                    <h3>Drive Files</h3>
+                    <ul id="gdrive-files-list">
+                        <!-- Google Drive files will be listed here -->
+                    </ul>
+                    <p id="gdrive-files-status" class="status-text"></p>
+                </div>
+            </section>
 
-        <section id="gdrive-section">
-            <h2>Google Drive</h2>
-            <div id="gdrive-auth-status">
-                <p>Status: Checking...</p>
-            </div>
-            <button id="gdrive-connect-button" style="display: none;">Connect to Google Drive</button>
-            <div id="gdrive-files-container" style="display: none;">
-                <h3>Drive Files</h3>
-                <ul id="gdrive-files-list">
-                    <!-- Google Drive files will be listed here -->
+            <section id="notes-list-container" class="sidebar-section">
+                <h2>Local Notes</h2>
+                <ul id="notes-list">
+                    <!-- Note items will be populated here -->
                 </ul>
-                <p id="gdrive-files-status"></p>
-            </div>
-        </section>
+                <p id="notes-list-status" class="status-text">Set vault path to see notes.</p>
+            </section>
+        </aside>
 
-        <section id="notes-list-container">
-            <h2>Local Notes</h2>
-            <ul id="notes-list">
-                <!-- Note items will be populated here -->
-            </ul>
-            <p id="notes-list-status">Set vault path to see notes.</p>
-        </section>
-
-        <section id="note-view-container">
-            <div class="note-header">
-                <h2 id="current-note-title">Note View</h2>
+        <main class="main-content">
+            <section id="note-view-container">
+                <div class="note-header">
+                    <h2 id="current-note-title">Note View</h2>
                 <button id="save-note-button">Save Note</button>
             </div>
-            <p id="save-status" class="status-message"></p>
+            <p id="save-status" class="status-text"></p> {/* Changed class here */}
 
             <div id="note-metadata-display" style="display: none;">
                 {/* Parsed frontmatter will be displayed here */}
