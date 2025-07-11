@@ -112,12 +112,44 @@ footer {
         flex-direction: row; /* Arrange sections side-by-side on larger screens */
         align-items: flex-start; /* Align items to the top */
     }
-    #vault-controls, #notes-list-container {
+    #vault-controls, #notes-list-container, #gdrive-section {
         flex-basis: 30%; /* Example width, adjust as needed */
+        /* Allow sections to grow if others are smaller, but not shrink beyond content */
+        flex-grow: 0;
+        flex-shrink: 0;
     }
-    #note-view-container {
+     #note-view-container {
         flex-basis: 70%; /* Example width */
-        flex-grow: 1;
+        flex-grow: 1; /* Allow note view to take up remaining space */
+    }
+    #gdrive-connect-button {
+        padding: 8px 12px;
+        background-color: #4285F4; /* Google Blue */
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-top: 10px;
+        transition: background-color 0.3s ease;
+    }
+    #gdrive-connect-button:hover {
+        background-color: #3578E5;
+    }
+    #gdrive-files-list {
+        list-style-type: none;
+        padding: 0;
+        max-height: 200px; /* Limit height and make scrollable */
+        overflow-y: auto;
+        border: 1px solid #eee;
+        border-radius: 4px;
+    }
+    #gdrive-files-list li {
+        padding: 6px 8px;
+        border-bottom: 1px solid #f0f0f0;
+        font-size: 0.9em;
+    }
+    #gdrive-files-list li:last-child {
+        border-bottom: none;
     }
     .note-content-area {
         width: 100%;
