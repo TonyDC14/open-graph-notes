@@ -85,6 +85,64 @@ app.get('/api/drive/auth/google/callback', async (req, res) => {
     }
 });
 
+// --- Search API Endpoint ---
+app.get('/api/search/all-notes-content', async (req, res) => {
+    if (!vaultPath) {
+        return res.status(400).json({ error: 'Vault path not set' });
+    }
+
+    try {
+        const allFiles = await fs.readdir(vaultPath);
+        const notesToProcess = allFiles.filter(file => file.endsWith('.md') || file.endsWith('.graph.md'));
+
+        const processedNotes = [];
+
+        for (const noteName of notesToProcess) {
+            const filePath = path.join(vaultPath, noteName);
+            const rawContent = await fs.readFile(filePath, 'utf-8');
+            let contentToIndex = rawContent; // Default for .md files or fallback
+
+            if (noteName.endsWith('.graph.md')) {
+                const graphRegex = /```json_graph\s*([\s\S]*?)\s*```/;
+                const match = rawContent.match(graphRegex);
+                let markdownPart = rawContent.replace(graphRegex, '').trim();
+                let graphText = '';
+
+                if (match && match[1]) {
+                    try {
+                        const graphData = JSON.parse(match[1]);
+                        if (graphData.nodes && Array.isArray(graphData.nodes)) {
+                            graphData.nodes.forEach(node => {
+                                if (node.label) graphText += node.label + ' ';
+                                if (node.content) graphText += node.content + ' '; // Assuming node.content is text/markdown
+                            });
+                        }
+                        // Could also index edge labels if desired:
+                        // if (graphData.edges && Array.isArray(graphData.edges)) {
+                        //     graphData.edges.forEach(edge => {
+                        //         if (edge.label) graphText += edge.label + ' ';
+                        //     });
+                        // }
+                        contentToIndex = `${markdownPart} ${graphText}`.trim();
+                    } catch (parseError) {
+                        console.warn(`Could not parse graph JSON in ${noteName} for search indexing: ${parseError.message}. Indexing raw content.`);
+                        // Fallback to indexing raw content of the .graph.md file if JSON is broken
+                        contentToIndex = rawContent;
+                    }
+                } else {
+                     // No graph block found, index raw content
+                    contentToIndex = rawContent;
+                }
+            }
+            processedNotes.push({ name: noteName, content: contentToIndex });
+        }
+        res.json(processedNotes);
+    } catch (error) {
+        console.error('Error fetching all notes content for search:', error);
+        res.status(500).json({ error: 'Failed to fetch notes content for search index.' });
+    }
+});
+
 // --- Google Drive File Operations Endpoints ---
 
 // Endpoint to list files from Google Drive

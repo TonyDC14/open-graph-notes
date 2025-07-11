@@ -112,7 +112,7 @@ footer {
         flex-direction: row; /* Arrange sections side-by-side on larger screens */
         align-items: flex-start; /* Align items to the top */
     }
-    #vault-controls, #notes-list-container, #gdrive-section {
+    #vault-controls, #notes-list-container, #gdrive-section, #search-section {
         flex-basis: 30%; /* Example width, adjust as needed */
         /* Allow sections to grow if others are smaller, but not shrink beyond content */
         flex-grow: 0;
@@ -151,6 +151,53 @@ footer {
     #gdrive-files-list li:last-child {
         border-bottom: none;
     }
+
+    /* Search Section Styling */
+    #search-input {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+
+    #search-results-container h4 {
+        margin-top: 0;
+        margin-bottom: 5px;
+        font-size: 0.95em;
+        color: #333;
+    }
+
+    #search-results-list {
+        list-style-type: none;
+        padding: 0;
+        max-height: 180px; /* Adjust as needed */
+        overflow-y: auto;
+        border: 1px solid #eee;
+        border-radius: 4px;
+        margin-bottom: 5px;
+    }
+
+    #search-results-list li {
+        padding: 7px 10px;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: background-color 0.2s ease;
+    }
+    #search-results-list li:hover {
+        background-color: #e9ecef;
+    }
+    #search-results-list li:last-child {
+        border-bottom: none;
+    }
+    #search-results-status {
+        font-size: 0.85em;
+        font-style: italic;
+        color: #777;
+    }
+
     .note-content-area {
         width: 100%;
         min-height: 300px; /* Give some decent height */

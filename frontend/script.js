@@ -25,6 +25,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const gdriveFilesList = document.getElementById('gdrive-files-list');
     const gdriveFilesStatus = document.getElementById('gdrive-files-status');
 
+    // Search UI Elements
+    const searchInput = document.getElementById('search-input');
+    const searchResultsContainer = document.getElementById('search-results-container');
+    const searchResultsList = document.getElementById('search-results-list');
+    const searchResultsStatus = document.getElementById('search-results-status');
+
+    let lunrIndex = null; // To hold the Lunr.js index instance
+
 
     // Test backend connection
     fetch('/api/hello')
@@ -175,6 +183,8 @@ document.addEventListener('DOMContentLoaded', () => {
             vaultStatus.style.color = 'green';
             // After setting vault, fetch and display notes
             await fetchAndDisplayNotes();
+            // After notes are listed, build the search index
+            await buildSearchIndex();
 
         } catch (error) {
             console.error('Error setting vault path:', error);
@@ -456,4 +466,135 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial check for Google Drive Auth Status
     checkGDriveAuthStatus();
 
+    // --- Search Indexing Logic ---
+    async function buildSearchIndex() {
+        if (!vaultPathInput.value) { // Or some other check if vault is truly set
+            console.log("Vault path not set, skipping search index build.");
+            lunrIndex = null; // Ensure index is cleared if vault is not set
+            // Optionally clear search UI if vault becomes unset
+            searchInput.value = '';
+            searchResultsContainer.style.display = 'none';
+            searchResultsList.innerHTML = '';
+            searchResultsStatus.textContent = '';
+            return;
+        }
+
+        console.log("Building search index...");
+        searchResultsStatus.textContent = "Building search index...";
+        searchResultsContainer.style.display = 'block'; // Show container while building
+
+        try {
+            const response = await fetch('/api/search/all-notes-content');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `HTTP Error: ${response.status}`);
+            }
+            const notesData = await response.json();
+
+            if (typeof lunr === 'undefined') {
+                console.error("Lunr.js not loaded!");
+                searchResultsStatus.textContent = "Error: Search library not loaded.";
+                return;
+            }
+
+            lunrIndex = lunr(function () {
+                this.ref('name'); // Document reference (filename)
+                this.field('name', { boost: 10 }); // Boost filename matches
+                this.field('content');
+
+                notesData.forEach(function (doc) {
+                    this.add(doc);
+                }, this);
+            });
+            console.log("Search index built successfully.");
+            searchResultsStatus.textContent = `Indexed ${notesData.length} notes. Ready to search.`;
+            // Keep search results container visible if index is built, but clear list
+            searchResultsList.innerHTML = '';
+            if (searchInput.value === '') { // Only hide if search input is empty
+                 // searchResultsStatus.textContent = 'Ready to search.'; // More accurate
+            }
+
+
+        } catch (error) {
+            console.error('Error building search index:', error);
+            lunrIndex = null;
+            searchResultsStatus.textContent = `Error building search index: ${error.message}`;
+            searchResultsStatus.style.color = 'red';
+        }
+    }
+
+    // Modify the setVaultPathButton event listener to call buildSearchIndex
+    // (This is an existing listener, we need to find it and add the call)
+    // The original call to fetchAndDisplayNotes() is fine to keep.
+    // We will find the successful vault set part and add buildSearchIndex() there.
+
+
+    // --- Search Execution & Display Logic ---
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value.trim();
+
+        if (!lunrIndex) {
+            searchResultsStatus.textContent = "Search index not built yet or failed to build.";
+            searchResultsContainer.style.display = 'block';
+            searchResultsList.innerHTML = '';
+            return;
+        }
+
+        if (query === '') {
+            searchResultsList.innerHTML = '';
+            searchResultsStatus.textContent = 'Type to search.'; // Or clear it
+            // Keep container visible if index is ready, or hide:
+            // searchResultsContainer.style.display = 'none';
+            if (lunrIndex) searchResultsStatus.textContent = `Indexed ${Object.keys(lunrIndex.documentStore.docs).length} notes. Ready to search.`;
+            else searchResultsStatus.textContent = '';
+            return;
+        }
+
+        try {
+            const results = lunrIndex.search(query);
+            searchResultsList.innerHTML = ''; // Clear previous results
+
+            if (results.length === 0) {
+                searchResultsStatus.textContent = 'No results found.';
+            } else {
+                searchResultsStatus.textContent = `${results.length} result(s) found:`;
+                results.forEach(result => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = result.ref; // result.ref is the filename
+                    // Highlight matched terms (simple example, could be more advanced)
+                    // result.matchData.metadata contains info about term matches
+                    // For example:
+                    // Object.keys(result.matchData.metadata).forEach(term => {
+                    //    if (result.matchData.metadata[term].content) { // if term matched in content
+                    //        // could add more info or styling
+                    //    }
+                    // });
+
+                    listItem.addEventListener('click', () => {
+                        loadNoteContent(result.ref);
+                        // Optionally clear search after clicking a result
+                        // searchInput.value = '';
+                        // searchResultsList.innerHTML = '';
+                        // searchResultsStatus.textContent = '';
+                        // searchResultsContainer.style.display = 'none';
+                    });
+                    searchResultsList.appendChild(listItem);
+                });
+            }
+            searchResultsContainer.style.display = 'block';
+        } catch (error) {
+            console.error("Error during search:", error);
+            searchResultsStatus.textContent = "Error during search.";
+            searchResultsList.innerHTML = '';
+            searchResultsContainer.style.display = 'block';
+        }
+    });
+
 });
+
+
+// Helper to find and modify existing listener (conceptual, actual modification below)
+// Locate: setVaultPathButton.addEventListener('click', async () => { ...
+// Inside its try block, after vaultStatus.style.color = 'green';
+// And after await fetchAndDisplayNotes();
+// Add: await buildSearchIndex();
