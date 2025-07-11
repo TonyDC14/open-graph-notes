@@ -591,6 +591,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             searchTerms = query; // Default search if no specific prefix
         }
+        // searchTerms = query; // Simplified for debugging -- REMOVE THIS LINE
 
 
         try {
