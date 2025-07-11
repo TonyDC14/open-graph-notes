@@ -220,6 +220,38 @@ footer {
     }
 }
 
+#note-metadata-display {
+    background-color: #f8f9fa; /* Light grey background */
+    border: 1px solid #dee2e6; /* Softer border */
+    border-radius: 4px;
+    padding: 12px 18px; /* Slightly more padding */
+    margin-bottom: 15px; /* Space below it */
+    font-size: 0.88em; /* Slightly smaller font for metadata */
+    color: #495057; /* Darker grey text */
+}
+
+#note-metadata-display h4 { /* Optional: if you add a title like "Metadata:" */
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1.0em; /* Relative to parent's 0.88em */
+    color: #343a40;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 5px;
+}
+
+#note-metadata-display pre { /* If displaying as raw JSON string */
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    background-color: #e9ecef; /* Light background for pre block */
+    border: 1px solid #ced4da;
+    padding: 10px;
+    border-radius: 3px;
+    font-size: 0.95em; /* Relative to parent's 0.88em */
+    color: #212529;
+    max-height: 150px; /* Limit height for long metadata */
+    overflow-y: auto;
+}
+
 /* Layout for side-by-side editor and preview */
 .editor-preview-layout {
     display: flex;
