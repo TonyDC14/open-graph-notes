@@ -614,7 +614,7 @@ document.addEventListener('DOMContentLoaded', () => {
             searchResultsList.innerHTML = '';
             searchResultsContainer.style.display = 'block';
         }
-    } // End of renderSearchResults function
+    }); // Added missing parenthesis for addEventListener
 
     // Event listener for the sort dropdown
     searchSortSelect.addEventListener('change', () => {
@@ -718,7 +718,7 @@ document.addEventListener('DOMContentLoaded', () => {
             searchResultsList.innerHTML = '';
             searchResultsContainer.style.display = 'block';
         }
-    });
+    }); // End of renderSearchResults function
 
 
     const createNewNoteButton = document.getElementById('create-new-note-button');
