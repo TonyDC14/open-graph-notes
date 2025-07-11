@@ -712,13 +712,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
             searchResultsContainer.style.display = 'block';
-        } catch (error) {
-            console.error("Error during search:", error);
-            searchResultsStatus.textContent = "Error during search.";
-            searchResultsList.innerHTML = '';
-            searchResultsContainer.style.display = 'block';
         }
-    }); // End of renderSearchResults function
+    } // End of renderSearchResults function
 
 
     const createNewNoteButton = document.getElementById('create-new-note-button');
