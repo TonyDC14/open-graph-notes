@@ -425,3 +425,43 @@ button:hover {
         flex-direction: column; /* Stack editor and preview on mobile */
     }
 }
+
+/* Search Results Enhancements (Appended) */
+.search-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+#search-results-list li {
+    /* padding: 8px 0; */ /* Overridden by existing #search-results-list li */
+    /* border-bottom: 1px solid #eee; */ /* Overridden by existing #search-results-list li */
+    /* These specific list item styles are already defined, ensure they don't conflict negatively */
+}
+
+.search-result-snippet {
+    font-size: 0.9em;
+    color: #555;
+    margin-left: 10px; /* Indent snippet slightly */
+    margin-top: 4px;
+    line-height: 1.4; /* Improve readability of snippets */
+}
+
+.search-result-snippet mark {
+    background-color: #fff352; /* Softer yellow */
+    color: #333;
+    padding: 1px 3px; /* Slightly more padding */
+    border-radius: 3px; /* More rounded */
+    font-weight: bold; /* Make marked text stand out */
+}
+
+/* Style for the sort dropdown if needed */
+#search-sort-select {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.85rem;
+    border-radius: 0.25rem;
+    border: 1px solid #d1d5db;
+    background-color: #fff;
+    margin-left: 10px; /* Space it from "Search Results:" text */
+}

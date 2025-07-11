@@ -30,7 +30,14 @@
                 <h2>Search Notes</h2>
                 <input type="search" id="search-input" placeholder="Search all notes...">
                 <div id="search-results-container" style="display: none;">
-                    <h4>Search Results:</h4>
+                    <div class="search-controls">
+                        <h4>Search Results:</h4>
+                        <select id="search-sort-select">
+                            <option value="relevance">Sort by Relevance</option>
+                            <option value="date_desc">Date (Newest First)</option>
+                            <option value="date_asc">Date (Oldest First)</option>
+                        </select>
+                    </div>
                     <ul id="search-results-list"></ul>
                     <p id="search-results-status" class="status-text"></p>
                 </div>

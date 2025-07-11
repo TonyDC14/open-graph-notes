@@ -30,10 +30,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchResultsContainer = document.getElementById('search-results-container');
     const searchResultsList = document.getElementById('search-results-list');
     const searchResultsStatus = document.getElementById('search-results-status');
+    const searchSortSelect = document.getElementById('search-sort-select');
     const noteMetadataDisplay = document.getElementById('note-metadata-display');
 
     let lunrIndex = null;
-
+    let currentSearchResults = []; // To store results for re-sorting
+    let allNotesDataForSearch = []; // To store note content for snippet generation
 
 
     fetch('/api/hello')
@@ -509,6 +511,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorData.error || `HTTP Error: ${response.status}`);
             }
             const notesData = await response.json();
+            allNotesDataForSearch = notesData; // Store for snippet generation
 
             if (typeof lunr === 'undefined') {
                 console.error("Lunr.js not loaded!");
@@ -520,8 +523,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.ref('name');
                 this.field('name', { boost: 10 });
                 this.field('content');
+                this.field('processedTags'); // Add the new field for tags
 
                 notesData.forEach(function (doc) {
+                    // doc will be like { name: "...", content: "...", processedTags: ["tag_foo", "tag_bar"] }
                     this.add(doc);
                 }, this);
             });
@@ -550,7 +555,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     searchInput.addEventListener('input', () => {
-        const query = searchInput.value.trim();
+        let query = searchInput.value.trim();
+        let searchTerms = query;
 
         if (!lunrIndex) {
             searchResultsStatus.textContent = "Search index not built yet or failed to build.";
@@ -569,33 +575,139 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        try {
-            const results = lunrIndex.search(query);
-            searchResultsList.innerHTML = '';
-
-            if (results.length === 0) {
-                searchResultsStatus.textContent = 'No results found.';
+        // Handle specific field queries, e.g., tags:
+        const tagQueryMatch = query.match(/^tags?:\s*([\w-]+)/i);
+        if (tagQueryMatch && tagQueryMatch[1]) {
+            const tagName = tagQueryMatch[1].toLowerCase().replace(/\s+/g, '_');
+            // Construct a query that targets the processedTags field
+            // Also, if there's text after the tags: query, include it as a general search term
+            const remainingQuery = query.substring(tagQueryMatch[0].length).trim();
+            if (remainingQuery) {
+                searchTerms = `processedTags:tag_${tagName} ${remainingQuery}`;
             } else {
-                searchResultsStatus.textContent = `${results.length} result(s) found:`;
-                results.forEach(result => {
-                    const listItem = document.createElement('li');
-                    listItem.textContent = result.ref;
+                searchTerms = `processedTags:tag_${tagName}`;
+            }
+            console.log("Executing tag search:", searchTerms);
+        } else {
+            searchTerms = query; // Default search if no specific prefix
+        }
 
 
+        try {
+            // Perform the search
+            const rawResults = lunrIndex.search(searchTerms);
+
+            // Map raw Lunr results to include full note data for easier sorting and snippet generation
+            currentSearchResults = rawResults.map(result => {
+                const noteDetail = allNotesDataForSearch.find(n => n.name === result.ref);
+                return {
+                    ...result, // Includes ref, score, matchData
+                    note: noteDetail // Includes name, content, processedTags, modifiedTime
+                };
+            });
+
+            renderSearchResults(); // New function to handle sorting and display
+
+        } catch (error) {
+            console.error("Error during search:", error);
+            searchResultsStatus.textContent = "Error during search.";
+            searchResultsList.innerHTML = '';
+            searchResultsContainer.style.display = 'block';
+        }
+    } // End of renderSearchResults function
+
+    // Event listener for the sort dropdown
+    searchSortSelect.addEventListener('change', () => {
+        // When sort order changes, re-render the existing search results
+        renderSearchResults();
+    });
 
 
+    function renderSearchResults() {
+        searchResultsList.innerHTML = ''; // Clear previous results
+        const sortBy = searchSortSelect.value;
 
+        // Sort currentSearchResults if needed
+        if (sortBy === 'date_desc') {
+            currentSearchResults.sort((a, b) => (b.note?.modifiedTime || 0) - (a.note?.modifiedTime || 0));
+        } else if (sortBy === 'date_asc') {
+            currentSearchResults.sort((a, b) => (a.note?.modifiedTime || 0) - (b.note?.modifiedTime || 0));
+        }
+        // For 'relevance', Lunr's default order is used, so no explicit sort needed here if currentSearchResults are fresh from Lunr.
+        // If re-rendering from a stored state that might have been sorted differently, might need to re-fetch or re-sort by score.
+        // However, since searchInput triggers a new search, `currentSearchResults` will be relevance-sorted initially.
 
-
-
-                    listItem.addEventListener('click', () => {
+        if (currentSearchResults.length === 0) {
+            searchResultsStatus.textContent = 'No results found.';
+        } else {
+            searchResultsStatus.textContent = `${currentSearchResults.length} result(s) found:`;
+            currentSearchResults.forEach(result => { // result now contains 'note' property
+                const listItem = document.createElement('li');
+                const titleLink = document.createElement('a');
+                    titleLink.href = '#';
+                    titleLink.textContent = result.ref; // Note name
+                    titleLink.addEventListener('click', (e) => {
+                        e.preventDefault();
                         loadNoteContent(result.ref);
-
-
-
-
-
                     });
+                    listItem.appendChild(titleLink);
+
+                    // Snippet generation using result.note and result.matchData
+                    // const noteData = allNotesDataForSearch.find(n => n.name === result.ref); // No longer needed, result.note has it
+                    const noteData = result.note;
+
+                    if (noteData && result.matchData && result.matchData.metadata) {
+                        let snippetText = '';
+                        const snippetLength = 150; // Characters
+                        let termsFound = [];
+
+                        // Collect all search terms that were found in this document
+                        for (const token in result.matchData.metadata) {
+                            if (result.matchData.metadata[token].content) { // Check 'content' field first
+                                termsFound.push(token);
+                            } else if (result.matchData.metadata[token].name) { // Then 'name'
+                                 termsFound.push(token);
+                            } else if (result.matchData.metadata[token].processedTags) { // Then 'processedTags'
+                                // For tags, we might not want a snippet from the tag itself,
+                                // but this structure allows for it if desired.
+                                // termsFound.push(token.startsWith('tag_') ? token.substring(4) : token);
+                            }
+                        }
+
+                        if (termsFound.length > 0 && noteData.content) {
+                            const fullContent = noteData.content;
+                            let bestSnippet = '';
+                            let maxScore = -1;
+
+                            // Try to find the best snippet containing any of the matched terms
+                            // This is a simple approach: take the first term found in 'content'
+                            for (const term of termsFound) {
+                                const termPositions = result.matchData.metadata[term]?.content?.position;
+                                if (termPositions && termPositions.length > 0) {
+                                    const pos = termPositions[0][0]; // Start position of the first occurrence
+                                    const start = Math.max(0, pos - Math.floor(snippetLength / 3));
+                                    const end = Math.min(fullContent.length, pos + Math.floor(2 * snippetLength / 3));
+
+                                    snippetText = (start > 0 ? '...' : '') +
+                                                  fullContent.substring(start, end) +
+                                                  (end < fullContent.length ? '...' : '');
+
+                                    // Simple highlighting (can be improved with regex for multiple terms)
+                                    const highlightTerm = term; // The actual term from Lunr's metadata
+                                    const regex = new RegExp(`(${highlightTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                                    snippetText = snippetText.replace(regex, '<mark>$1</mark>');
+                                    bestSnippet = snippetText;
+                                    break; // Use the first term found in content for simplicity
+                                }
+                            }
+                             if (bestSnippet) {
+                                const snippetDiv = document.createElement('div');
+                                snippetDiv.className = 'search-result-snippet';
+                                snippetDiv.innerHTML = bestSnippet; // Use innerHTML because of <mark>
+                                listItem.appendChild(snippetDiv);
+                            }
+                        }
+                    }
                     searchResultsList.appendChild(listItem);
                 });
             }
