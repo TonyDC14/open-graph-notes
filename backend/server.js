@@ -105,11 +105,11 @@ app.get('/api/search/all-notes-content', async (req, res) => {
         const processedNotes = [];
 
         for (const noteName of notesToProcess) {
-            const filePath = path.join(vaultPath, noteName);
+            const filePath = path.join(vaultPath, noteName); // This is the correct, single declaration
             const originalRawContent = await fs.readFile(filePath, 'utf-8');
 
-            const filePath = path.join(vaultPath, noteName); // Get full file path for stat
-            const stats = await fs.stat(filePath);
+            // const filePath = path.join(vaultPath, noteName); // REMOVE THIS DUPLICATE
+            const stats = await fs.stat(filePath); // Uses the filePath from above
             const modifiedTime = stats.mtimeMs;
 
             const { frontmatter, contentAfterFrontmatter } = parseFrontmatter(originalRawContent);
