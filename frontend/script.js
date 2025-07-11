@@ -1,3 +1,7 @@
+if (typeof marked?.marked?.parse === 'function') {
+    marked = marked.marked;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const vaultPathInput = document.getElementById('vault-path-input');
     const setVaultPathButton = document.getElementById('set-vault-path-button');
@@ -710,7 +714,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     searchResultsList.appendChild(listItem);
                 });
-            }
             searchResultsContainer.style.display = 'block';
         }
     } // End of renderSearchResults function

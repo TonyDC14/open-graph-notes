@@ -3,29 +3,31 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app/backend
 
-# Copy package.json and package-lock.json (if available)
+# Copy package.json and package-lock.json
 COPY backend/package*.json ./
 
 # Install backend dependencies
 RUN npm install
 
-# Copy the rest of the backend code
+# Copy the rest of the backend source code
 COPY backend/ ./
 
-# Stage 2: Setup the runtime environment
+# Stage 2: Final runtime image
 FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy frontend files
+# Copy frontend files (if static or separately handled)
 COPY frontend/ ./frontend/
 
-# Copy backend from builder stage
+# Copy backend code from the builder stage
 COPY --from=builder /app/backend ./backend/
+# Copy backend node_modules from the builder stage
+COPY --from=builder /app/backend/node_modules ./backend/node_modules
 
-# Expose the port the app runs on
+# Expose the application port
 EXPOSE 3000
 
-# Command to run the application
-# The server.js is now expected to be at ./backend/server.js
+# Start the backend server
 CMD ["node", "backend/server.js"]
+
