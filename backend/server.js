@@ -515,8 +515,3 @@ app.get('/api/notes/:noteName', async (req, res) => {
         res.status(500).json({ error: `Failed to read note: ${noteName}` });
     }
 });
-
-
-app.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
-});
