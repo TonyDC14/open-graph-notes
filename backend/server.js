@@ -170,8 +170,36 @@ app.get('/api/notes/:noteName', async (req, res) => {
             return res.status(400).json({ error: 'Requested path is not a file' });
         }
 
-        const content = await fs.readFile(filePath, 'utf-8');
-        res.json({ name: noteName, content: content });
+        const rawContent = await fs.readFile(filePath, 'utf-8');
+
+        if (noteName.endsWith('.graph.md')) {
+            const graphRegex = /```json_graph\s*([\s\S]*?)\s*```/;
+            const match = rawContent.match(graphRegex);
+
+            if (match && match[1]) {
+                try {
+                    const graphData = JSON.parse(match[1]);
+                    // Remove the graph block from the markdown content
+                    const markdownContent = rawContent.replace(graphRegex, '').trim();
+                    return res.json({
+                        name: noteName,
+                        type: 'graph',
+                        graphData: graphData,
+                        markdownContent: markdownContent
+                    });
+                } catch (parseError) {
+                    console.error(`Error parsing JSON from graph block in ${noteName}:`, parseError);
+                    // Fallback to treating as a regular markdown file if JSON is invalid
+                    return res.json({ name: noteName, type: 'markdown', content: rawContent });
+                }
+            } else {
+                // No json_graph block found, treat as regular markdown with a graph extension
+                return res.json({ name: noteName, type: 'markdown', content: rawContent });
+            }
+        } else {
+            // Regular .md file
+            res.json({ name: noteName, type: 'markdown', content: rawContent });
+        }
     } catch (error) {
         console.error(`Error reading note ${noteName}:`, error);
         res.status(500).json({ error: `Failed to read note: ${noteName}` });

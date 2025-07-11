@@ -11,8 +11,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const noteContentEdit = document.getElementById('note-content-edit'); // The editor
     const saveNoteButton = document.getElementById('save-note-button');
     const saveStatus = document.getElementById('save-status');
+    const graphViewSection = document.getElementById('graph-view-section');
+    const graphContainer = document.getElementById('graph-container');
+    let visNetwork = null; // To hold the Vis.js Network instance
 
     let currentOpenNoteName = null; // To keep track of the currently open note for saving
+    let currentOpenNoteType = 'markdown'; // 'markdown' or 'graph'
 
     // Test backend connection
     fetch('/api/hello')
@@ -179,12 +183,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to load and display a single note's content
     async function loadNoteContent(noteName) {
         currentOpenNoteName = null; // Reset while loading
+        currentOpenNoteType = 'markdown'; // Default to markdown
         saveStatus.textContent = ''; // Clear save status
         saveStatus.className = 'status-message';
         currentNoteTitle.textContent = `Loading ${noteName}...`;
-        noteContentEdit.value = 'Fetching content...'; // Populate textarea
-        noteContentPreview.innerHTML = '<p>Fetching HTML preview...</p>';
+        noteContentEdit.value = 'Fetching content...';
+        noteContentPreview.innerHTML = '<p>Fetching preview...</p>';
         noteContentDisplay.textContent = ''; // Clear the hidden static display
+        graphViewSection.style.display = 'none'; // Hide graph section by default
+        if (visNetwork) {
+            visNetwork.destroy(); // Destroy previous graph instance if any
+            visNetwork = null;
+        }
 
 
         try {
@@ -196,17 +206,70 @@ document.addEventListener('DOMContentLoaded', () => {
             const noteData = await response.json();
 
             currentNoteTitle.textContent = noteData.name;
-            currentOpenNoteName = noteData.name; // Set the current note name
+            currentOpenNoteName = noteData.name;
+            currentOpenNoteType = noteData.type || 'markdown';
 
-            // Populate the textarea with the note content
-            noteContentEdit.value = noteData.content;
+            if (currentOpenNoteType === 'graph') {
+                noteContentEdit.value = noteData.markdownContent + "\n\n```json_graph\n" + JSON.stringify(noteData.graphData, null, 2) + "\n```"; // Show full content in editor
 
-            // Initial parse and preview
-            if (typeof marked === 'function') {
-                noteContentPreview.innerHTML = marked.parse(noteData.content);
-            } else {
-                noteContentPreview.innerHTML = '<p style="color:red;">Error: Markdown parser (marked.js) not loaded.</p>';
-                console.error("marked.js not found. Make sure it's included in your HTML.");
+                if (typeof marked === 'function') {
+                    noteContentPreview.innerHTML = marked.parse(noteData.markdownContent);
+                } else {
+                    noteContentPreview.innerHTML = '<p style="color:red;">Error: Markdown parser (marked.js) not loaded.</p>';
+                }
+
+                if (noteData.graphData && typeof vis !== 'undefined') {
+                    graphViewSection.style.display = 'block';
+                    const nodes = new vis.DataSet(noteData.graphData.nodes);
+                    const edges = new vis.DataSet(noteData.graphData.edges);
+                    const data = { nodes: nodes, edges: edges };
+                    const options = {
+                        physics: {
+                            stabilization: true,
+                            barnesHut: {
+                                gravitationalConstant: -10000,
+                                springConstant: 0.002,
+                                springLength: 150
+                            }
+                        },
+                        interaction: {
+                            tooltipDelay: 200,
+                            hideEdgesOnDrag: true
+                        },
+                        nodes: {
+                            shape: 'ellipse', // Default shape
+                            font: {
+                                size: 14,
+                                face: 'arial'
+                            }
+                        },
+                        edges: {
+                            font: {
+                                size: 12,
+                                face: 'arial',
+                                align: 'horizontal'
+                            },
+                            arrows: {
+                                to: { enabled: true, scaleFactor: 1 }
+                            },
+                            smooth: {
+                                type: 'continuous'
+                            }
+                        }
+                    };
+                    visNetwork = new vis.Network(graphContainer, data, options);
+                } else {
+                    graphContainer.innerHTML = '<p style="color:red;">Could not load graph data or Vis.js library.</p>';
+                }
+
+            } else { // 'markdown' type
+                noteContentEdit.value = noteData.content;
+                if (typeof marked === 'function') {
+                    noteContentPreview.innerHTML = marked.parse(noteData.content);
+                } else {
+                    noteContentPreview.innerHTML = '<p style="color:red;">Error: Markdown parser (marked.js) not loaded.</p>';
+                }
+                graphViewSection.style.display = 'none';
             }
 
         } catch (error) {
@@ -215,6 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
             noteContentEdit.value = `Failed to load content: ${error.message}`;
             noteContentPreview.innerHTML = `<p style="color:red;">Failed to load preview: ${error.message}</p>`;
             currentOpenNoteName = null;
+            graphViewSection.style.display = 'none';
         }
     }
 
@@ -222,12 +286,22 @@ document.addEventListener('DOMContentLoaded', () => {
     noteContentEdit.addEventListener('input', () => {
         saveStatus.textContent = ''; // Clear save status on edit
         saveStatus.className = 'status-message';
-        if (typeof marked === 'function') {
-            const markdownText = noteContentEdit.value;
-            noteContentPreview.innerHTML = marked.parse(markdownText);
-        } else {
-            // This error should ideally only show once if marked is missing
-            noteContentPreview.innerHTML = '<p style="color:red;">Error: Markdown parser (marked.js) not loaded.</p>';
+
+        const currentMarkdown = noteContentEdit.value;
+
+        if (currentOpenNoteType === 'graph') {
+            // For graph files, try to extract markdown part for preview
+            // This is a simplified approach; a more robust parser would be needed for live graph editing
+            const graphRegex = /```json_graph\s*([\s\S]*?)\s*```/;
+            const markdownPart = currentMarkdown.replace(graphRegex, '').trim();
+            if (typeof marked === 'function') {
+                noteContentPreview.innerHTML = marked.parse(markdownPart);
+            }
+            // Live updating of the vis.js graph from editor changes is complex and deferred to an "edit graph" feature.
+        } else { // 'markdown'
+            if (typeof marked === 'function') {
+                noteContentPreview.innerHTML = marked.parse(currentMarkdown);
+            }
         }
     });
 

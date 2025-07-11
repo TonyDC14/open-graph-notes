@@ -169,6 +169,16 @@ footer {
     overflow-y: auto; /* Add scroll if content overflows */
 }
 
+#graph-view-section {
+    margin-top: 20px; /* Add some space above the graph section */
+}
+
+#graph-container {
+    /* Styles for graph-container are mostly inline in index.html for now,
+       but could be moved here if more are needed.
+       e.g., background-color: #f9f9f9; was inline. */
+}
+
 .note-header {
     display: flex;
     justify-content: space-between;
