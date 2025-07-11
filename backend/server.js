@@ -4,6 +4,7 @@ const fs = require('fs-extra');
 const chokidar = require('chokidar');
 const WebSocket = require('ws');
 const { google } = require('googleapis'); // Added for Google Drive API
+const yaml = require('js-yaml'); // Added for YAML frontmatter parsing
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -99,14 +100,37 @@ app.get('/api/search/all-notes-content', async (req, res) => {
 
         for (const noteName of notesToProcess) {
             const filePath = path.join(vaultPath, noteName);
-            const rawContent = await fs.readFile(filePath, 'utf-8');
-            let contentToIndex = rawContent; // Default for .md files or fallback
+            const originalRawContent = await fs.readFile(filePath, 'utf-8');
+
+            const { frontmatter, contentAfterFrontmatter } = parseFrontmatter(originalRawContent);
+            let textFromFrontmatter = '';
+
+            if (frontmatter) {
+                // Convert frontmatter object to a searchable string
+                // Only include string or array of string values
+                Object.values(frontmatter).forEach(value => {
+                    if (typeof value === 'string') {
+                        textFromFrontmatter += value + ' ';
+                    } else if (Array.isArray(value)) {
+                        value.forEach(item => {
+                            if (typeof item === 'string') {
+                                textFromFrontmatter += item + ' ';
+                            }
+                        });
+                    }
+                });
+            }
+
+            let mainContentForIndex = contentAfterFrontmatter;
+            let graphText = '';
 
             if (noteName.endsWith('.graph.md')) {
                 const graphRegex = /```json_graph\s*([\s\S]*?)\s*```/;
-                const match = rawContent.match(graphRegex);
-                let markdownPart = rawContent.replace(graphRegex, '').trim();
-                let graphText = '';
+                // Use contentAfterFrontmatter for graph parsing, as frontmatter is already stripped
+                const match = contentAfterFrontmatter.match(graphRegex);
+
+                // The markdown part for a graph file is contentAfterFrontmatter with graph block removed
+                let markdownPartForGraphFile = contentAfterFrontmatter.replace(graphRegex, '').trim();
 
                 if (match && match[1]) {
                     try {
@@ -114,27 +138,25 @@ app.get('/api/search/all-notes-content', async (req, res) => {
                         if (graphData.nodes && Array.isArray(graphData.nodes)) {
                             graphData.nodes.forEach(node => {
                                 if (node.label) graphText += node.label + ' ';
-                                if (node.content) graphText += node.content + ' '; // Assuming node.content is text/markdown
+                                if (node.content) graphText += node.content + ' ';
                             });
                         }
-                        // Could also index edge labels if desired:
-                        // if (graphData.edges && Array.isArray(graphData.edges)) {
-                        //     graphData.edges.forEach(edge => {
-                        //         if (edge.label) graphText += edge.label + ' ';
-                        //     });
-                        // }
-                        contentToIndex = `${markdownPart} ${graphText}`.trim();
+                        // content for .graph.md = markdown part (after FM, outside graph) + graph text
+                        mainContentForIndex = `${markdownPartForGraphFile} ${graphText}`.trim();
                     } catch (parseError) {
-                        console.warn(`Could not parse graph JSON in ${noteName} for search indexing: ${parseError.message}. Indexing raw content.`);
-                        // Fallback to indexing raw content of the .graph.md file if JSON is broken
-                        contentToIndex = rawContent;
+                        console.warn(`Could not parse graph JSON in ${noteName} for search indexing (all-notes): ${parseError.message}. Indexing content after frontmatter.`);
+                        // Fallback: mainContentForIndex is already contentAfterFrontmatter
+                        // but if graph block was crucial, it might be better to use originalRawContent minus frontmatter block.
+                        // For now, contentAfterFrontmatter is the base.
                     }
                 } else {
-                     // No graph block found, index raw content
-                    contentToIndex = rawContent;
+                     // No graph block found, mainContentForIndex is contentAfterFrontmatter
+                     mainContentForIndex = contentAfterFrontmatter;
                 }
             }
-            processedNotes.push({ name: noteName, content: contentToIndex });
+            // Combine frontmatter text with the main content for indexing
+            const combinedContentToIndex = `${textFromFrontmatter} ${mainContentForIndex}`.trim();
+            processedNotes.push({ name: noteName, content: combinedContentToIndex });
         }
         res.json(processedNotes);
     } catch (error) {
@@ -142,6 +164,27 @@ app.get('/api/search/all-notes-content', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch notes content for search index.' });
     }
 });
+
+// Helper function to parse YAML frontmatter
+function parseFrontmatter(rawContent) {
+    const frontmatterRegex = /^---\s*[\r\n]+([\s\S]*?)[\r\n]+---\s*[\r\n]+/;
+    const match = rawContent.match(frontmatterRegex);
+
+    if (match && match[1]) {
+        try {
+            const frontmatter = yaml.load(match[1]);
+            const content = rawContent.substring(match[0].length);
+            return { frontmatter, contentAfterFrontmatter: content, rawContent };
+        } catch (e) {
+            console.warn('Failed to parse YAML frontmatter:', e.message);
+            // If parsing fails, treat the whole thing as content
+            return { frontmatter: null, contentAfterFrontmatter: rawContent, rawContent };
+        }
+    }
+    // No frontmatter found
+    return { frontmatter: null, contentAfterFrontmatter: rawContent, rawContent };
+}
+
 
 // --- Google Drive File Operations Endpoints ---
 
@@ -363,35 +406,57 @@ app.get('/api/notes/:noteName', async (req, res) => {
             return res.status(400).json({ error: 'Requested path is not a file' });
         }
 
-        const rawContent = await fs.readFile(filePath, 'utf-8');
+        const originalRawContent = await fs.readFile(filePath, 'utf-8');
+        const { frontmatter, contentAfterFrontmatter, rawContent: fullRawContentForEditor } = parseFrontmatter(originalRawContent);
 
         if (noteName.endsWith('.graph.md')) {
+            // Use contentAfterFrontmatter for graph parsing
             const graphRegex = /```json_graph\s*([\s\S]*?)\s*```/;
-            const match = rawContent.match(graphRegex);
+            const match = contentAfterFrontmatter.match(graphRegex);
 
             if (match && match[1]) {
                 try {
                     const graphData = JSON.parse(match[1]);
-                    // Remove the graph block from the markdown content
-                    const markdownContent = rawContent.replace(graphRegex, '').trim();
+                    const markdownContentOnly = contentAfterFrontmatter.replace(graphRegex, '').trim();
                     return res.json({
                         name: noteName,
                         type: 'graph',
+                        frontmatter: frontmatter,
                         graphData: graphData,
-                        markdownContent: markdownContent
+                        markdownContent: markdownContentOnly, // Markdown after frontmatter AND outside graph block
+                        rawContent: fullRawContentForEditor // Full original content for editor
                     });
                 } catch (parseError) {
                     console.error(`Error parsing JSON from graph block in ${noteName}:`, parseError);
-                    // Fallback to treating as a regular markdown file if JSON is invalid
-                    return res.json({ name: noteName, type: 'markdown', content: rawContent });
+                    // Fallback: return with frontmatter (if any) and the contentAfterFrontmatter as main content
+                    return res.json({
+                        name: noteName,
+                        type: 'markdown', // Treat as markdown if graph block is broken
+                        frontmatter: frontmatter,
+                        content: contentAfterFrontmatter,
+                        rawContent: fullRawContentForEditor
+                    });
                 }
             } else {
-                // No json_graph block found, treat as regular markdown with a graph extension
-                return res.json({ name: noteName, type: 'markdown', content: rawContent });
+                // No json_graph block found, treat as regular markdown (but it's a .graph.md file)
+                // The content is whatever was after potential frontmatter
+                return res.json({
+                    name: noteName,
+                    type: 'markdown',
+                    frontmatter: frontmatter,
+                    content: contentAfterFrontmatter,
+                    rawContent: fullRawContentForEditor
+                });
             }
         } else {
             // Regular .md file
-            res.json({ name: noteName, type: 'markdown', content: rawContent });
+            res.json({
+                name: noteName,
+                type: 'markdown',
+                frontmatter: frontmatter,
+                content: contentAfterFrontmatter, // Content after potential frontmatter
+                rawContent: fullRawContentForEditor // Full original content for editor
+            });
         }
     } catch (error) {
         console.error(`Error reading note ${noteName}:`, error);

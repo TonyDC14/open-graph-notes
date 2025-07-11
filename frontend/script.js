@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchResultsContainer = document.getElementById('search-results-container');
     const searchResultsList = document.getElementById('search-results-list');
     const searchResultsStatus = document.getElementById('search-results-status');
+    const noteMetadataDisplay = document.getElementById('note-metadata-display');
 
     let lunrIndex = null; // To hold the Lunr.js index instance
 
@@ -209,6 +210,8 @@ document.addEventListener('DOMContentLoaded', () => {
         noteContentPreview.innerHTML = '<p>Fetching preview...</p>';
         noteContentDisplay.textContent = ''; // Clear the hidden static display
         graphViewSection.style.display = 'none'; // Hide graph section by default
+        noteMetadataDisplay.style.display = 'none'; // Hide metadata display by default
+        noteMetadataDisplay.innerHTML = ''; // Clear previous metadata
         if (visNetwork) {
             visNetwork.destroy(); // Destroy previous graph instance if any
             visNetwork = null;
@@ -227,11 +230,27 @@ document.addEventListener('DOMContentLoaded', () => {
             currentOpenNoteName = noteData.name;
             currentOpenNoteType = noteData.type || 'markdown';
 
-            if (currentOpenNoteType === 'graph') {
-                noteContentEdit.value = noteData.markdownContent + "\n\n```json_graph\n" + JSON.stringify(noteData.graphData, null, 2) + "\n```"; // Show full content in editor
+            // Display frontmatter if it exists
+            if (noteData.frontmatter && Object.keys(noteData.frontmatter).length > 0) {
+                const fmTitle = document.createElement('h4');
+                fmTitle.textContent = 'Metadata (Frontmatter):';
+                noteMetadataDisplay.appendChild(fmTitle);
+                const pre = document.createElement('pre');
+                pre.textContent = JSON.stringify(noteData.frontmatter, null, 2);
+                noteMetadataDisplay.appendChild(pre);
+                noteMetadataDisplay.style.display = 'block';
+            } else {
+                noteMetadataDisplay.style.display = 'none';
+            }
 
+            // Populate editor with the full raw content
+            noteContentEdit.value = noteData.rawContent || '';
+
+
+            if (currentOpenNoteType === 'graph') {
+                // For graph files, markdownContent from API is already after frontmatter
                 if (typeof marked === 'function') {
-                    noteContentPreview.innerHTML = marked.parse(noteData.markdownContent);
+                    noteContentPreview.innerHTML = marked.parse(noteData.markdownContent || '');
                 } else {
                     noteContentPreview.innerHTML = '<p style="color:red;">Error: Markdown parser (marked.js) not loaded.</p>';
                 }
@@ -280,10 +299,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     graphContainer.innerHTML = '<p style="color:red;">Could not load graph data or Vis.js library.</p>';
                 }
 
-            } else { // 'markdown' type
-                noteContentEdit.value = noteData.content;
+            } else { // 'markdown' type, content from API is already after frontmatter
+                // noteContentEdit value is already set with rawContent
                 if (typeof marked === 'function') {
-                    noteContentPreview.innerHTML = marked.parse(noteData.content);
+                    noteContentPreview.innerHTML = marked.parse(noteData.content || ''); // noteData.content is content after FM
                 } else {
                     noteContentPreview.innerHTML = '<p style="color:red;">Error: Markdown parser (marked.js) not loaded.</p>';
                 }
