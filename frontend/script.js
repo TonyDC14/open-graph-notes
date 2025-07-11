@@ -617,3 +617,92 @@ document.addEventListener('DOMContentLoaded', () => {
 // Inside its try block, after vaultStatus.style.color = 'green';
 // And after await fetchAndDisplayNotes();
 // Add: await buildSearchIndex();
+
+
+    // --- Create New Note Logic ---
+    const createNewNoteButton = document.getElementById('create-new-note-button');
+    if (createNewNoteButton) {
+        createNewNoteButton.addEventListener('click', async () => {
+            if (!vaultPathInput.value.trim()) { // Check if vault is set by checking the input's value
+                alert("Please set a vault path before creating a new note.");
+                return;
+            }
+
+            let newFilename = window.prompt("Enter filename for the new note (e.g., my_new_note.md):");
+
+            if (newFilename === null) { // User pressed Cancel
+                return;
+            }
+            newFilename = newFilename.trim();
+
+            if (!newFilename) { // User entered empty string and pressed OK
+                alert("Filename cannot be empty.");
+                return;
+            }
+
+            if (!newFilename.endsWith('.md')) {
+                newFilename += '.md';
+            }
+
+            // Basic check for just ".md" or very short names like "a.md"
+            if (newFilename.length < 4) {
+                alert("Invalid filename. Please provide a more descriptive name for your note.");
+                return;
+            }
+
+            // Regex for basic invalid filename characters (simplistic, OS dependent for full coverage)
+            const invalidCharsRegex = /[<>:"/\\|?*\x00-\x1f]/;
+            if (invalidCharsRegex.test(newFilename)) {
+                alert("Filename contains invalid characters (e.g., <, >, :, \", /, \\, |, ?, *). Please use a valid filename.");
+                return;
+            }
+
+            try {
+                // Default content for the new note
+                const titleFromFilename = newFilename.replace(/\.md$/, '');
+                // const initialContent = `# ${titleFromFilename}\n\n`; // Backend now handles default content
+
+                const response = await fetch('/api/notes/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    // Backend will create default content, just send filename
+                    body: JSON.stringify({ filename: newFilename }),
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || `HTTP Error: ${response.status}`);
+                }
+
+                // Using a less intrusive way to show success, perhaps update a status bar
+                // For now, alert is fine for quick feedback.
+                // alert(result.message);
+                const saveStatusLikeElement = document.getElementById('notes-list-status'); // Reuse notes list status for this
+                if (saveStatusLikeElement) {
+                    saveStatusLikeElement.textContent = result.message;
+                    saveStatusLikeElement.style.color = 'green';
+                    setTimeout(() => {
+                        if (saveStatusLikeElement.textContent === result.message) saveStatusLikeElement.textContent = '';
+                    }, 3000);
+                }
+
+
+                // Refresh notes list (chokidar will also do this, but good for immediate UI update)
+                await fetchAndDisplayNotes();
+                // Open the new note
+                loadNoteContent(result.filename);
+                // Rebuild search index to include the new note
+                await buildSearchIndex();
+
+
+            } catch (error) {
+                console.error('Error creating new note:', error);
+                alert(`Failed to create note: ${error.message}`);
+            }
+        });
+    } else {
+        console.warn("#create-new-note-button not found. UI might be outdated.");
+    }

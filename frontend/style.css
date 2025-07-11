@@ -90,6 +90,31 @@ ul {
     margin-bottom: 0.5rem;
 }
 
+.sidebar-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem; /* Existing h2 margin-bottom was 1rem, this replaces it for h2 inside */
+}
+
+.sidebar-section-header h2 {
+    margin-bottom: 0; /* Remove bottom margin as header div handles it */
+}
+
+#create-new-note-button {
+    background-color: #6c757d; /* Secondary/neutral color */
+    color: white;
+    border: none;
+    padding: 0.2rem 0.5rem; /* Smaller padding for an icon-like button */
+    font-size: 1.1rem; /* Larger font for "+" */
+    line-height: 1;
+    border-radius: 0.25rem; /* Slightly less rounded */
+    font-weight: bold;
+}
+#create-new-note-button:hover {
+    background-color: #5a6268;
+}
+
 
 .main-content {
     flex-grow: 1; /* Takes remaining space */

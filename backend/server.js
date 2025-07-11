@@ -165,6 +165,58 @@ app.get('/api/search/all-notes-content', async (req, res) => {
     }
 });
 
+// API Endpoint to create a new note
+app.post('/api/notes/create', async (req, res) => {
+    if (!vaultPath) {
+        return res.status(400).json({ error: 'Vault path not set' });
+    }
+
+    const { filename } = req.body;
+
+    if (!filename || typeof filename !== 'string') {
+        return res.status(400).json({ error: 'Filename is required and must be a string.' });
+    }
+
+    // Validate filename
+    if (!filename.endsWith('.md')) {
+        // For now, only .md. Could be extended to .graph.md later.
+        return res.status(400).json({ error: 'Filename must end with .md' });
+    }
+    if (filename.includes('/') || filename.includes('..')) {
+        return res.status(400).json({ error: 'Filename cannot contain path traversal characters.' });
+    }
+    // A more robust validation might check for other invalid characters depending on OS.
+    // For example: /[\x00-\x1f\x7f<>:"/\\|?*]+/g
+
+    const sanitizedFilename = path.basename(filename); // Extra safety, though previous checks should cover
+    if (sanitizedFilename !== filename) {
+         return res.status(400).json({ error: 'Invalid filename characters detected after sanitization.'});
+    }
+
+
+    const filePath = path.join(vaultPath, sanitizedFilename);
+
+    try {
+        const exists = await fs.pathExists(filePath);
+        if (exists) {
+            return res.status(409).json({ error: `File '${sanitizedFilename}' already exists.` });
+        }
+
+        // Create the file with some default content (e.g., a title based on filename)
+        const title = sanitizedFilename.replace(/\.md$/, ''); // Remove .md for title
+        const defaultContent = `# ${title}\n\n`;
+        await fs.writeFile(filePath, defaultContent, 'utf-8');
+
+        console.log(`New note created: ${filePath}`);
+        res.status(201).json({ message: `Note '${sanitizedFilename}' created successfully.`, filename: sanitizedFilename });
+
+    } catch (error) {
+        console.error(`Error creating note ${sanitizedFilename}:`, error);
+        res.status(500).json({ error: `Failed to create note '${sanitizedFilename}'. ${error.message}` });
+    }
+});
+
+
 // Helper function to parse YAML frontmatter
 function parseFrontmatter(rawContent) {
     const frontmatterRegex = /^---\s*[\r\n]+([\s\S]*?)[\r\n]+---\s*[\r\n]+/;
