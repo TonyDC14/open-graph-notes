@@ -18,6 +18,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentOpenNoteName = null; // To keep track of the currently open note for saving
     let currentOpenNoteType = 'markdown'; // 'markdown' or 'graph'
 
+    // Google Drive UI Elements
+    const gdriveAuthStatus = document.getElementById('gdrive-auth-status');
+    const gdriveConnectButton = document.getElementById('gdrive-connect-button');
+    const gdriveFilesContainer = document.getElementById('gdrive-files-container');
+    const gdriveFilesList = document.getElementById('gdrive-files-list');
+    const gdriveFilesStatus = document.getElementById('gdrive-files-status');
+
+
     // Test backend connection
     fetch('/api/hello')
         .then(response => {
@@ -348,4 +356,104 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, 5000);
     });
+
+    // --- Google Drive UI Logic ---
+    async function checkGDriveAuthStatus() {
+        try {
+            gdriveAuthStatus.innerHTML = '<p>Status: Checking...</p>';
+            const response = await fetch('/api/drive/auth/status');
+            const data = await response.json();
+
+            if (data.isAuthenticated) {
+                gdriveAuthStatus.innerHTML = `<p style="color: green;">Status: Connected to Google Drive. (${data.message || ''})</p>`;
+                gdriveConnectButton.style.display = 'none';
+                gdriveFilesContainer.style.display = 'block';
+                fetchGDriveFiles();
+            } else {
+                gdriveAuthStatus.innerHTML = `<p style="color: orange;">Status: Not connected. (${data.message || ''})</p>`;
+                gdriveConnectButton.style.display = 'block';
+                gdriveFilesContainer.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error checking Google Drive auth status:', error);
+            gdriveAuthStatus.innerHTML = '<p style="color: red;">Status: Error checking connection.</p>';
+            gdriveConnectButton.style.display = 'block'; // Show button to allow retry
+        }
+    }
+
+    gdriveConnectButton.addEventListener('click', async () => {
+        try {
+            gdriveAuthStatus.innerHTML = '<p>Status: Initiating connection...</p>';
+            const response = await fetch('/api/drive/auth/initiate');
+            const data = await response.json();
+
+            if (response.ok && data.authUrl) {
+                gdriveAuthStatus.innerHTML = '<p>Status: Redirecting to Google for authentication... Please follow the instructions in the new tab/window.</p>';
+                // Open the auth URL in a new tab. User will be redirected to /api/drive/auth/google/callback
+                // which should then ideally close itself or notify this page.
+                // For now, we'll rely on polling or manual refresh after user completes auth.
+                const authWindow = window.open(data.authUrl, '_blank', 'width=600,height=700');
+
+                // Basic polling to check status after a short while, assuming user completes auth
+                // A more robust solution would use window.postMessage from the callback page or server-sent events.
+                let pollCount = 0;
+                const maxPolls = 12; // Poll for 2 minutes (12 * 10s)
+                const pollInterval = setInterval(async () => {
+                    pollCount++;
+                    const statusResponse = await fetch('/api/drive/auth/status');
+                    const statusData = await statusResponse.json();
+                    if (statusData.isAuthenticated || (authWindow && authWindow.closed) || pollCount >= maxPolls) {
+                        clearInterval(pollInterval);
+                        checkGDriveAuthStatus(); // Refresh UI based on final status
+                        if (authWindow && !authWindow.closed) {
+                           // authWindow.close(); // Close if still open and we got a status or timed out
+                        }
+                    }
+                }, 10000); // Poll every 10 seconds
+
+            } else {
+                throw new Error(data.error || 'Failed to get authentication URL.');
+            }
+        } catch (error) {
+            console.error('Error initiating Google Drive connection:', error);
+            gdriveAuthStatus.innerHTML = `<p style="color: red;">Status: Error initiating connection: ${error.message}</p>`;
+        }
+    });
+
+    async function fetchGDriveFiles() {
+        gdriveFilesStatus.textContent = 'Loading Drive files...';
+        gdriveFilesList.innerHTML = '';
+        try {
+            const response = await fetch('/api/drive/list-files');
+            if (!response.ok) {
+                const errorData = await response.json();
+                 // If 401, it might mean tokens are bad, so re-check auth status
+                if (response.status === 401) {
+                    checkGDriveAuthStatus();
+                }
+                throw new Error(errorData.error || `HTTP Error: ${response.status}`);
+            }
+            const files = await response.json();
+            if (files.length === 0) {
+                gdriveFilesStatus.textContent = 'No files found or accessible in Google Drive.';
+            } else {
+                files.forEach(file => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `${file.name} (${file.mimeType})`;
+                    // Add click listener later for handling drive files [[drive://file.id]]
+                    // listItem.addEventListener('click', () => handleDriveFileClick(file.id, file.name));
+                    gdriveFilesList.appendChild(listItem);
+                });
+                gdriveFilesStatus.textContent = ''; // Clear status
+            }
+        } catch (error) {
+            console.error('Error fetching Google Drive files:', error);
+            gdriveFilesStatus.textContent = `Error: ${error.message}`;
+            gdriveFilesStatus.style.color = 'red';
+        }
+    }
+
+    // Initial check for Google Drive Auth Status
+    checkGDriveAuthStatus();
+
 });
