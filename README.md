@@ -107,3 +107,14 @@ If you want to run the application locally for development without Docker:
 ---
 
 *This is a basic implementation. More features like graph views, advanced search, and plugin systems are planned for the future.*
+
+# Build
+docker build -t knowledge-system .
+
+# Stop & remove previous container if exists
+docker rm -f ks-app
+
+# Run
+docker run -d -p 3000:3000 \
+  -v ~/my_notes_vault:/app/notes_vault_in_container \
+  --name ks-app knowledge-system
