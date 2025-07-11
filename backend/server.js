@@ -108,14 +108,31 @@ app.get('/api/search/all-notes-content', async (req, res) => {
             const filePath = path.join(vaultPath, noteName);
             const originalRawContent = await fs.readFile(filePath, 'utf-8');
 
+            const filePath = path.join(vaultPath, noteName); // Get full file path for stat
+            const stats = await fs.stat(filePath);
+            const modifiedTime = stats.mtimeMs;
+
             const { frontmatter, contentAfterFrontmatter } = parseFrontmatter(originalRawContent);
             let textFromFrontmatter = '';
+            let indexedTags = [];
 
             if (frontmatter) {
                 // Convert frontmatter object to a searchable string
                 // Only include string or array of string values
-                Object.values(frontmatter).forEach(value => {
-                    if (typeof value === 'string') {
+                Object.entries(frontmatter).forEach(([key, value]) => {
+                    if (key === 'tags') {
+                        if (typeof value === 'string') {
+                            indexedTags.push(`tag_${value.toLowerCase().replace(/\s+/g, '_')}`);
+                            textFromFrontmatter += value + ' '; // Also add to general content
+                        } else if (Array.isArray(value)) {
+                            value.forEach(item => {
+                                if (typeof item === 'string') {
+                                    indexedTags.push(`tag_${item.toLowerCase().replace(/\s+/g, '_')}`);
+                                    textFromFrontmatter += item + ' '; // Also add to general content
+                                }
+                            });
+                        }
+                    } else if (typeof value === 'string') {
                         textFromFrontmatter += value + ' ';
                     } else if (Array.isArray(value)) {
                         value.forEach(item => {
@@ -162,7 +179,12 @@ app.get('/api/search/all-notes-content', async (req, res) => {
             }
             // Combine frontmatter text with the main content for indexing
             const combinedContentToIndex = `${textFromFrontmatter} ${mainContentForIndex}`.trim();
-            processedNotes.push({ name: noteName, content: combinedContentToIndex });
+            processedNotes.push({
+                name: noteName,
+                content: combinedContentToIndex,
+                processedTags: indexedTags,
+                modifiedTime: modifiedTime
+            });
         }
         res.json(processedNotes);
     } catch (error) {
